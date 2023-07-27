@@ -158,7 +158,7 @@ export class SqliteApi<T> {
 
     return {
       data: data.batch,
-      getOne: <X = any>(key: string): X | undefined => {
+      getFirst: <X = any>(key: string): X | undefined => {
         const d = fn(key);
         return Array.isArray(d) ? d?.[0] : d;
       },
@@ -322,7 +322,7 @@ export class PQuery<
   }
 
   insertOne(value: Partial<V>) {
-    this.$insertOne(value).executeTakeFirst();
+    return this.$insertOne(value).executeTakeFirst();
   }
 
   $insertOne(values: Partial<V>) {

@@ -289,7 +289,7 @@ export function runTest(api: TestApi) {
       ]);
       const users = result.getMany<UserTable>('user');
       expect(users.length).toBe(10);
-      const post = result.getOne<any>('insertUser');
+      const post = result.getFirst<any>('insertUser');
       expect(post.changes).toBe(1);
     }
   });
