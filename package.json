@@ -78,7 +78,7 @@
   },
   "release": {
     "branches": [
-      "main"
+      "release"
     ],
     "plugins": [
       [
@@ -134,6 +134,10 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@ryansonshine/commitizen": "^4.2.8",
+    "@ryansonshine/cz-conventional-changelog": "^3.3.4",
+    "semantic-release": "^21.0.1",
+    "conventional-changelog-conventionalcommits": "^5.0.0",
     "@cloudflare/workers-types": "^4.20230115.0",
     "@types/better-sqlite3": "^7.6.4",
     "@types/ejson": "^2.2.0",
