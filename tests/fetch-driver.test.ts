@@ -1,6 +1,5 @@
-import { afterAll, beforeAll, describe } from 'vitest';
+import { afterAll, describe, vi } from 'vitest';
 import { handler } from '../src/driver/sqlite-driver';
-import fastify from 'fastify';
 import dotenv from 'dotenv';
 dotenv.config();
 import { runTest } from './sharedTest';
@@ -13,10 +12,9 @@ import Database from 'better-sqlite3';
 
 loglevel.setLevel((process.env.DEBUG_LEVEL || loglevel.levels.DEBUG) as any);
 
-const PORT = 9010;
 const config: DbConfig = {
   apiKey: 'test',
-  apiUrl: `http://localhost:${PORT}/api/v1`,
+  apiUrl: 'http://localhost:3000/api/v1',
   database: 'Test',
   logger: loglevel,
 };
@@ -26,29 +24,18 @@ const api = new TestApi({
   driver: new FetchDriver(config),
 });
 
-const server = fastify({
-  logger: true,
-  disableRequestLogging: true,
+const db = new Database(':memory:');
+
+global.fetch = vi.fn((_, options) => {
+  const data = handler(db, JSON.parse(options?.body as string));
+  return Promise.resolve({
+    json: () => new Promise(resolve => resolve(data)),
+    ok: true,
+  } as any);
 });
 describe('FetchDriver', () => {
-  beforeAll(async () => {
-    const db = new Database(':memory:');
-
-    server.post('/api/v1', async (req, res) => {
-      const body = req.body as any;
-      const result = handler(db, body);
-      res.header('Content-Type', 'application/json');
-      res.send(result);
-    });
-
-    await server.listen({
-      host: '0.0.0.0',
-      port: PORT,
-    });
-    console.log(`server listening on port ${PORT}`);
-  });
-  afterAll(async () => {
-    await server.close();
+  afterAll(() => {
+    vi.resetAllMocks();
   });
   runTest(api);
 });
