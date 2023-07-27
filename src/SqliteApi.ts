@@ -306,6 +306,7 @@ export class PQuery<
   }
 
   $updateById(id: string, v: Partial<V>) {
+    (v as any).updatedAt = new Date();
     return this.db
       .updateTable(this.tableName)
       .where('id', '=', id as any)
@@ -319,6 +320,7 @@ export class PQuery<
   $updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
     let query = this.db.updateTable(this.tableName);
     query = mappingQueryOptions(query, opts, false);
+    (opts.data as any).updatedAt = new Date();
     return query.set(opts.data as any);
   }
 
@@ -328,6 +330,8 @@ export class PQuery<
 
   $insertOne(value: Partial<V> & { id?: string }) {
     if (!value.id) value.id = uid();
+    (value as any).createdAt = new Date();
+    (value as any).updatedAt = new Date();
     return this.db.insertInto(this.tableName).values(value as any);
   }
 
@@ -338,6 +342,8 @@ export class PQuery<
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
     values.forEach((o: any) => {
       if (!o.id) o.id = uid();
+      o.createdAt = new Date();
+      o.updateAt = new Date();
     });
     return this.db.insertInto(this.tableName).values(values as any);
   }
