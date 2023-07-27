@@ -1,5 +1,5 @@
 {
-  "name": "kysey-zod-sqlite",
+  "name": "kysely-zod-sqlite",
   "version": "1.0.1",
   "description": "litte orm with kysely + zod for d1 sqlite",
   "main": "./dist/index.js",
