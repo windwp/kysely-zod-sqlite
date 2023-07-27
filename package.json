@@ -1,0 +1,158 @@
+{
+  "name": "kysey-zod-sqlite",
+  "version": "0.0.4",
+  "description": "litte orm with kysely + zod for d1 sqlite",
+  "main": "./dist/index.js",
+  "type": "module",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json ",
+    "fix-esm-import-path": "npx fix-esm-import-path ./dist/index.js && npx fix-esm-import-path ./dist/driver/*.js",
+    "clean": "rm -rf ./dist/",
+    "cm": "cz",
+    "lint": "eslint ./src/ --fix",
+    "semantic-release": "semantic-release",
+    "test": "vitest --single-thread",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chanceseed-com/kysey-zod-sqlite.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Chanceseed",
+    "email": "chanceseed-com@users.noreply.github.com",
+    "url": "https://github.com/chanceseed-com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./driver/sqlite": {
+      "types": "./dist/driver/sqlite-driver.d.ts",
+      "import": "./dist/driver/sqlite-driver.js",
+      "require": "./dist/driver/sqlite-driver.js"
+    },
+    "./driver/fetch": {
+      "types": "./dist/driver/fetch-driver.d.ts",
+      "import": "./dist/driver/fetch-driver.js",
+      "require": "./dist/driver/fetch-driver.js"
+    },
+    "./driver/d1": {
+      "types": "./dist/driver/d1-driver.d.ts",
+      "import": "./dist/driver/d1-driver.js",
+      "require": "./dist/driver/d1-driver.js"
+    }
+  },
+  "engines": {
+    "node": ">=12.0"
+  },
+  "keywords": [
+    "boilerplate",
+    "template",
+    "typescript",
+    "vscode",
+    "commitizen",
+    "semantic-release",
+    "codecov"
+  ],
+  "bugs": {
+    "url": "https://github.com/chanceseed-com/kysey-zod-sqlite/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/chanceseed-com/kysely-zod-sqlite",
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/@ryansonshine/cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "*.ts": "eslint --cache --cache-location .eslintcache --fix"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "conventionalcommits",
+          "releaseRules": [
+            {
+              "type": "build",
+              "scope": "deps",
+              "release": "patch"
+            }
+          ]
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "conventionalcommits",
+          "presetConfig": {
+            "types": [
+              {
+                "type": "feat",
+                "section": "Features"
+              },
+              {
+                "type": "fix",
+                "section": "Bug Fixes"
+              },
+              {
+                "type": "build",
+                "section": "Dependencies and Other Build Updates",
+                "hidden": false
+              }
+            ]
+          }
+        }
+      ],
+      "@semantic-release/npm",
+      "@semantic-release/github"
+    ]
+  },
+  "dependencies": {
+    "date-fns": "^2.30.0",
+    "import": "^0.0.6",
+    "kysely": "^0.26.1",
+    "kysely-plugin-serialize": "^0.3.4",
+    "loglevel": "^1.8.1",
+    "nanoid": "^4.0.2",
+    "superjson": "^1.12.1",
+    "type-fest": "^3.11.0",
+    "uid": "^2.0.2",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230115.0",
+    "@types/better-sqlite3": "^7.6.4",
+    "@types/ejson": "^2.2.0",
+    "@types/flat": "^5.0.2",
+    "@types/node": "^12.20.11",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "better-sqlite3": "^8.4.0",
+    "dotenv": "^16.0.3",
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "fastify": "^4.20.0",
+    "fix-esm-import-path": "^1.4.0",
+    "lint-staged": "^13.2.1",
+    "prettier": "^2.2.1",
+    "ts-node": "^10.2.1",
+    "typescript": "^5.0.2",
+    "vitest": "^0.33.0"
+  }
+}
