@@ -25,7 +25,9 @@ export type DataBody =
   | {
       action: 'batchAllSmt';
       batch: {
+        key: string;
         sql: string;
+        tableName: string;
         parameters: readonly any[];
         action: 'selectFirst' | 'run' | 'selectAll';
       }[];

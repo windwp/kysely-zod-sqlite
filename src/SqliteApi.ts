@@ -122,54 +122,47 @@ export class SqliteApi<T> {
     return this.execQuery(body, opts);
   }
 
-
-  /**
-   * use this api to excute multiple sql query on one batch operation
-   * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
-   */
-  async batchAllSmt(
-    sqlQuerys: { compile: () => CompiledQuery<T> }[],
-    opts?: ApiOptions
-  ) {
-    Object.values(sqlQuerys).forEach(o => o.compile());
-
-    const table: string[] = [];
-    const cq = sqlQuerys.map(q => {
-      const v = q.compile();
-      const tableName = (v.query as any).from?.froms[0]?.table.identifier?.name;
-      table.push(tableName);
-      return v;
-    });
+  async batchAllSmt<
+    V extends {
+      sql: { compile: () => CompiledQuery<T> };
+      key: string;
+    }[]
+  >(sqlQuerys: V, opts?: ApiOptions) {
     const body: DataBody = {
       action: 'batchAllSmt',
-      batch: cq as any,
+      batch: sqlQuerys.map(o => {
+        const v = o.sql.compile();
+        const tableName = (v.query as any).from?.froms[0]?.table.identifier
+          ?.name;
+        return {
+          sql: v.sql,
+          parameters: v.parameters,
+          action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
+          tableName: tableName,
+          key: o.key,
+        };
+      }),
     };
-    const data = await this.execQuery(body, opts);
+    const data: {
+      batch: { key: string; results: any[]; tableName: string }[];
+    } = await this.execQuery(body, opts);
+
+    const fn = <X = any>(key: string): X[] => {
+      const v = data.batch.find(o => o.key === key);
+      if (!v) return [];
+      if (!v.tableName || !(this.schema as any).shape[v.tableName]) {
+        return v.results as X[];
+      }
+      return v.results.map((this.schema as any).shape[v.tableName].parse);
+    };
 
     return {
       data: data.batch,
-      /* parse data with zod schema and mapping type */
-      getFirst: <X = any>(index: number, tableName?: string): X | undefined => {
-        if (!data.batch || data.batch.length < index || !data.batch[index]) {
-          return undefined;
-        }
-        tableName = tableName ?? table[index];
-        if (!tableName || !(this.schema as any).shape[tableName])
-          return data.batch[index];
-        return (this.schema as any).shape[tableName].parse(data.batch[index]);
+      getOne: <X = any>(key: string): X | undefined => {
+        const d = fn(key);
+        return Array.isArray(d) ? d?.[0] : d;
       },
-      /* parse data with zod schema and mapping type */
-      getMany: <X = any>(index: number, tableName?: string): X[] => {
-        if (!data.batch || data.batch.length < index || !data.batch[index]) {
-          return [];
-        }
-        tableName = tableName ?? table[index];
-        if (!tableName || !(this.schema as any).shape[tableName])
-          return data.batch[index];
-        return data.batch[index].map(
-          (this.schema as any).shape[tableName].parse
-        ) as X[];
-      },
+      getMany: <X = any>(key: string): X[] => fn(key),
     };
   }
 
@@ -319,7 +312,7 @@ export class PQuery<
   }
 
   updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
-    return this.$updateMany(opts).execute();
+    return this.$updateMany(opts).executeTakeFirst();
   }
 
   $updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
@@ -329,10 +322,18 @@ export class PQuery<
   }
 
   insertOne(value: Partial<V>) {
-    this.$insertOne(value).execute();
+    this.$insertOne(value).executeTakeFirst();
   }
 
   $insertOne(values: Partial<V>) {
+    return this.db.insertInto(this.tableName).values(values as any);
+  }
+
+  insertMany(value: Partial<V>[]) {
+    return this.$insertMany(value).execute();
+  }
+
+  $insertMany(values: Partial<V>[]) {
     return this.db.insertInto(this.tableName).values(values as any);
   }
 

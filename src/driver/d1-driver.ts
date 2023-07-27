@@ -90,7 +90,13 @@ async function D1Handler(
         meta: v[0]?.meta,
         success: v?.[0].success,
         results: v?.[0].results,
-        batch: v,
+        batch: body.batch.map((o, index) => {
+          return {
+            key: o.key,
+            tableName: o.tableName,
+            results: v[index]?.results,
+          };
+        }),
       } as any;
     }
     default:

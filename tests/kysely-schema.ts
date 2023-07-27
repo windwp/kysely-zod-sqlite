@@ -28,11 +28,11 @@ export const postSchema = z.object({
 });
 
 export const postRelationSchema = postSchema.extend({
-  user: zJsonString(userSchema.optional()),
+  user: zJsonString(userSchema).optional(),
 });
 
 export const userRelationSchema = userSchema.extend({
-  posts: zJsonString(z.array(postRelationSchema)),
+  posts: zJsonString(z.array(postRelationSchema)).optional(),
 });
 
 export const userTable = {

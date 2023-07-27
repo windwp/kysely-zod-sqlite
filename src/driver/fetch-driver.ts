@@ -56,18 +56,6 @@ class FetchConnection implements DatabaseConnection {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
     }
-    if ((compiledQuery as any).batch) {
-      (compiledQuery as any).batch = Object.keys(
-        (compiledQuery as any).batch
-      ).map((k: string) => {
-        const v = (compiledQuery as any).batch[k];
-        return {
-          action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          sql: v.sql,
-          parameters: v.parameters,
-        };
-      });
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {

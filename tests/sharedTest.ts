@@ -33,7 +33,7 @@ async function textFixture(api: TestApi) {
     };
   });
   await api.TestPost.insertMany(postArr);
-  api.config.logger?.setLevel('info');
+  api.config.logger?.setLevel('debug');
   return { userArr, postArr };
 }
 export function runTest(api: TestApi) {
@@ -272,15 +272,25 @@ export function runTest(api: TestApi) {
     }
     {
       const result = await api.batchAllSmt([
-        api.db.selectFrom('TestUser').selectAll(),
-        api.db.insertInto('TestUser').values({
-          id: '123',
-          name: 'test',
-          email: uid() + '@gmail.com',
-        }),
+        {
+          key: 'user',
+          sql: api.db.selectFrom('TestUser').selectAll(),
+        },
+        {
+          key: 'insertUser',
+          sql: api.db.insertInto('TestPost').values({
+            id: uid(),
+            name: 'post',
+            data: '',
+            isPublished: true,
+            userId: userArr[0].id,
+          }),
+        },
       ]);
-      const users = result.getMany<UserTable>(0);
+      const users = result.getMany<UserTable>('user');
       expect(users.length).toBe(10);
+      const post = result.getOne<any>('insertUser');
+      expect(post.changes).toBe(1);
     }
   });
 }

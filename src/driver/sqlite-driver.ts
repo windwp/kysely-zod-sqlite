@@ -96,11 +96,20 @@ export function handler(db: Database, body: DataBody) {
     case 'batchAllSmt': {
       if (body.batch) {
         db.transaction(() => {
+          console.log('body.batch', body.batch);
           for (const v of body.batch) {
             if (v.action === 'selectAll') {
-              result.batch.push(db.prepare(v.sql).all(...v.parameters));
+              result.batch.push({
+                key: v.key,
+                tableName: v.tableName,
+                results: db.prepare(v.sql).all(...v.parameters),
+              });
             } else {
-              result.batch.push(db.prepare(v.sql).run(...v.parameters));
+              result.batch.push({
+                key: v.key,
+                tableName: v.tableName,
+                results: db.prepare(v.sql).run(...v.parameters),
+              });
             }
           }
         })();
@@ -128,18 +137,6 @@ class BetterConnection implements DatabaseConnection {
     if (!action) {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
-    }
-    if ((compiledQuery as any).batch) {
-      (compiledQuery as any).batch = Object.keys(
-        (compiledQuery as any).batch
-      ).map((k: string) => {
-        const v = (compiledQuery as any).batch[k];
-        return {
-          action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          sql: v.sql,
-          parameters: v.parameters,
-        };
-      });
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
