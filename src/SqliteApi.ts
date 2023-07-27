@@ -122,6 +122,7 @@ export class SqliteApi<T> {
     return this.execQuery(body, opts);
   }
 
+
   /**
    * use this api to excute multiple sql query on one batch operation
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
@@ -149,7 +150,9 @@ export class SqliteApi<T> {
       data: data.batch,
       /* parse data with zod schema and mapping type */
       getFirst: <X = any>(index: number, tableName?: string): X | undefined => {
-        if (!data.batch[index]) return undefined;
+        if (!data.batch || data.batch.length < index || !data.batch[index]) {
+          return undefined;
+        }
         tableName = tableName ?? table[index];
         if (!tableName || !(this.schema as any).shape[tableName])
           return data.batch[index];
@@ -157,7 +160,9 @@ export class SqliteApi<T> {
       },
       /* parse data with zod schema and mapping type */
       getMany: <X = any>(index: number, tableName?: string): X[] => {
-        if (!data.batch[index]) return [];
+        if (!data.batch || data.batch.length < index || !data.batch[index]) {
+          return [];
+        }
         tableName = tableName ?? table[index];
         if (!tableName || !(this.schema as any).shape[tableName])
           return data.batch[index];
