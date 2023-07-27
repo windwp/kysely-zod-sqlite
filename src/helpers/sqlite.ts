@@ -2,7 +2,10 @@ import {
   AliasNode,
   ColumnNode,
   IdentifierNode,
+  RawBuilder,
   ReferenceNode,
+  SelectQueryBuilder,
+  Simplify,
   sql,
 } from 'kysely';
 
@@ -28,4 +31,12 @@ export function jsonArrayFrom(expr: any) {
   return sql`(select coalesce(json_group_array(json_object(${sql.join(
     getJsonObjectArgs(expr.toOperationNode(), 'agg')
   )})), '[]') from ${expr} as agg)`;
+}
+
+export function jsonObjectFrom<O>(
+  expr: SelectQueryBuilder<any, any, O>
+): RawBuilder<Simplify<O> | null> {
+  return sql`(select json_object(${sql.join(
+    getJsonObjectArgs(expr.toOperationNode(), 'obj')
+  )}) from ${expr} as obj)`;
 }

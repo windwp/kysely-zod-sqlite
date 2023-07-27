@@ -19,8 +19,7 @@ import {
   TableRelation,
 } from './types';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
-import { jsonObjectFrom } from 'kysely/helpers/mysql';
-import { jsonArrayFrom } from './helpers/sqlite';
+import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { z } from 'zod';
 
 export interface Apdater {
