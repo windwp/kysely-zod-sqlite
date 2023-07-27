@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/chanceseed-com/kysey-zod-sqlite/compare/v1.0.0...v1.0.1) (2023-07-27)
+
+
+### Bug Fixes
+
+* package-lock ([56de568](https://github.com/chanceseed-com/kysey-zod-sqlite/commit/56de5685664346dd455f746dc3ecd1eb87c4cec4))
+
 ## 1.0.0 (2023-07-27)
 
 
