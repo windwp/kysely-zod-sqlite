@@ -252,10 +252,8 @@ function mappingRelations<V, R>(
 }
 
 type VRelations<Table> = Table extends { relations?: infer X } ? X : never;
-// export type Relations<VTable> =
 /**
  * Save some litte time because I migration from prisma and
- * too many (as any) 😄
  */
 export class PQuery<
   V,
@@ -305,43 +303,50 @@ export class PQuery<
   }
 
   updateById(id: string, v: Partial<V>) {
+    return this.$updateById(id, v).execute();
+  }
+
+  $updateById(id: string, v: Partial<V>) {
     return this.db
       .updateTable(this.tableName)
       .where('id', '=', id as any)
-      .set(v as any)
-      .execute();
+      .set(v as any);
   }
 
   updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
-    let query = this.db.updateTable(this.tableName);
-    query = mappingQueryOptions(query, opts, false);
-    return query.set(opts.data as any).executeTakeFirst();
+    return this.$updateMany(opts).execute();
   }
 
-  insertOne(values: Partial<V>) {
-    return this.db
-      .insertInto(this.tableName)
-      .values(values as any)
-      .execute();
+  $updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
+    let query = this.db.updateTable(this.tableName);
+    query = mappingQueryOptions(query, opts, false);
+    return query.set(opts.data as any);
   }
-  insertMany(values: Array<Partial<V>>) {
-    return this.db
-      .insertInto(this.tableName)
-      .values(values as any)
-      .execute();
+
+  insertOne(value: Partial<V>) {
+    this.$insertOne(value).execute();
+  }
+
+  $insertOne(values: Partial<V>) {
+    return this.db.insertInto(this.tableName).values(values as any);
   }
 
   deleteById(id: string) {
-    return this.db
-      .deleteFrom(this.tableName)
-      .where('id', '=', id as any)
-      .execute();
+    return this.$deleteById(id).execute();
   }
 
-  deleteMany({ where }: { where?: QueryWhere<V> }) {
+  $deleteById(id: string) {
+    return this.db.deleteFrom(this.tableName).where('id', '=', id as any);
+  }
+
+  deleteMany(opts: { where?: QueryWhere<V> }) {
+    return this.$deleteMany(opts).execute();
+  }
+
+  $deleteMany({ where }: { where?: QueryWhere<V> }) {
     let query = this.db.deleteFrom(this.tableName);
     query = mappingQueryOptions(query, { where }, false);
-    return query.execute();
+    return query;
   }
 
   async count({ where }: { where: QueryWhere<V> }) {
