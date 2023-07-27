@@ -182,7 +182,9 @@ export class SqliteApi<T> {
     ) => {
       return new PQuery<V, R>(this.db, innerTable);
     };
-    return fn;
+    return {
+      create: fn,
+    };
   }
 }
 
