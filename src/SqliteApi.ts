@@ -18,7 +18,7 @@ import {
   ShortQueryRelations,
   TableRelation,
 } from './types';
-import { SqliteSerializePlugin } from './serialize';
+import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonObjectFrom } from 'kysely/helpers/mysql';
 import { jsonArrayFrom } from './helpers/sqlite';
 import { z } from 'zod';

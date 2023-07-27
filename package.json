@@ -33,17 +33,17 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js"
     },
-    "./driver/sqlite": {
+    "./dist/driver/sqlite": {
       "types": "./dist/driver/sqlite-driver.d.ts",
       "import": "./dist/driver/sqlite-driver.js",
       "require": "./dist/driver/sqlite-driver.js"
     },
-    "./driver/fetch": {
+    "./dist/driver/fetch": {
       "types": "./dist/driver/fetch-driver.d.ts",
       "import": "./dist/driver/fetch-driver.js",
       "require": "./dist/driver/fetch-driver.js"
     },
-    "./driver/d1": {
+    "./dist/driver/d1": {
       "types": "./dist/driver/d1-driver.d.ts",
       "import": "./dist/driver/d1-driver.js",
       "require": "./dist/driver/d1-driver.js"
