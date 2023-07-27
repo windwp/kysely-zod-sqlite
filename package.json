@@ -8,7 +8,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json ",
+    "build": "tsc --project tsconfig.build.json && npm run fix-esm-import-path",
     "fix-esm-import-path": "npx fix-esm-import-path ./dist/index.js && npx fix-esm-import-path ./dist/driver/*.js",
     "clean": "rm -rf ./dist/",
     "cm": "cz",
@@ -78,7 +78,7 @@
   },
   "release": {
     "branches": [
-      "release"
+      "main"
     ],
     "plugins": [
       [

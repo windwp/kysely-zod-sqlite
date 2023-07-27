@@ -1,4 +1,4 @@
-import { ShortSyntax, SqliteApi } from '../src/SqliteApi';
+import { PQuery, SqliteApi } from '../src/SqliteApi';
 import {
   Database,
   PostRelation,
@@ -11,9 +11,9 @@ import {
 
 export class TestApi extends SqliteApi<Database> {
   get TestUser() {
-    return new ShortSyntax<UserTable, UserRelation>(this.db, userTable);
+    return new PQuery<UserTable, UserRelation>(this.db, userTable);
   }
   get TestPost() {
-    return new ShortSyntax<PostTable, PostRelation>(this.db, postTable);
+    return new PQuery<PostTable, PostRelation>(this.db, postTable);
   }
 }

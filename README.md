@@ -1,4 +1,5 @@
 # feature 
+use sqlite with kysely + zod.
 
 
 # Links

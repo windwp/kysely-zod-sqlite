@@ -1,1 +1,2 @@
-export { SqliteApi } from './SqliteApi';
+export { SqliteApi, PQuery } from './SqliteApi';
+export { zBoolean, zJsonString } from './helpers/zod';

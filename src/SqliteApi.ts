@@ -237,7 +237,7 @@ function mappingRelations<V, R>(
  * Save some litte time because I migration from prisma and
  * too many (as any) 😄
  */
-export class ShortSyntax<
+export class PQuery<
   V,
   VRelations extends { [k: string]: TableRelation } = any,
   VTable extends { tableName: keyof T & string; relations?: VRelations } = any,

@@ -1,31 +1,6 @@
 import { TypeOf, z } from 'zod';
 import { TableDefinition } from '../src/types';
-
-const zBoolean = z.custom<boolean>().transform(value => {
-  if (typeof value === 'boolean') return value;
-  return value === 'true';
-});
-
-function zJsonString<T>(schema: z.Schema<T>) {
-  return z
-    .custom<T>()
-    .transform((v, ctx): T => {
-      if (!v) return v;
-      if (typeof v === 'string') {
-        try {
-          return schema.parse(JSON.parse(v));
-        } catch (e: any) {
-          ctx.addIssue({
-            code: 'custom',
-            message: e.message,
-          });
-          return z.NEVER;
-        }
-      }
-      return v;
-    })
-    .optional();
-}
+import { zBoolean, zJsonString } from '../src/helpers/zod';
 
 const dataSchema = z.object({
   value: z.string(),
