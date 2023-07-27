@@ -260,8 +260,7 @@ export function runTest(api: TestApi) {
         [
           ['aaa', 'user0'],
           ['bbb', 'user1'],
-        ],
-        { showSql: true }
+        ]
       );
 
       const check0 = await api.TestUser.selectFirst({

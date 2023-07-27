@@ -147,7 +147,6 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
-    "fastify": "^4.20.0",
     "fix-esm-import-path": "^1.4.0",
     "lint-staged": "^13.2.1",
     "prettier": "^2.2.1",
