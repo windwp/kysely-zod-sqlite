@@ -318,6 +318,12 @@ export class PQuery<
     return query.set(opts.data as any).executeTakeFirst();
   }
 
+  insertOne(values: Partial<V>) {
+    return this.db
+      .insertInto(this.tableName)
+      .values(values as any)
+      .execute();
+  }
   insertMany(values: Array<Partial<V>>) {
     return this.db
       .insertInto(this.tableName)
