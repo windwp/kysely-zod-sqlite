@@ -21,6 +21,7 @@ import {
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { z } from 'zod';
+import { uid } from 'uid';
 
 export interface Apdater {
   fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
@@ -321,19 +322,23 @@ export class PQuery<
     return query.set(opts.data as any);
   }
 
-  insertOne(value: Partial<V>) {
+  insertOne(value: Partial<V> & { id?: string }) {
     return this.$insertOne(value).executeTakeFirst();
   }
 
-  $insertOne(values: Partial<V>) {
-    return this.db.insertInto(this.tableName).values(values as any);
+  $insertOne(value: Partial<V> & { id?: string }) {
+    if (!value.id) value.id = uid();
+    return this.db.insertInto(this.tableName).values(value as any);
   }
 
-  insertMany(value: Partial<V>[]) {
-    return this.$insertMany(value).execute();
+  insertMany(values: Array<Partial<V> & { id?: string }>) {
+    return this.$insertMany(values).execute();
   }
 
-  $insertMany(values: Partial<V>[]) {
+  $insertMany(values: Array<Partial<V> & { id?: string }>) {
+    values.forEach((o: any) => {
+      if (!o.id) o.id = uid();
+    });
     return this.db.insertInto(this.tableName).values(values as any);
   }
 
