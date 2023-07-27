@@ -39,10 +39,10 @@ export type TableRelation = {
   select: string[];
   type: 'OneToMany' | 'OneToOne';
 };
-export type TableDefinition = {
-  tableName: string;
-  relations: {
-    [key: string]: TableRelation;
+export type TableDefinition<T, R> = {
+  tableName: keyof T & string;
+  relations?: {
+    [key in keyof R]: TableRelation;
   };
 };
 

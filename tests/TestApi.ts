@@ -1,9 +1,7 @@
 import { PQuery, SqliteApi } from '../src/SqliteApi';
 import {
   Database,
-  PostRelation,
   PostTable,
-  UserRelation,
   UserTable,
   postTable,
   userTable,
@@ -11,9 +9,9 @@ import {
 
 export class TestApi extends SqliteApi<Database> {
   get TestUser() {
-    return new PQuery<UserTable, UserRelation>(this.db, userTable);
+    return this.table<UserTable>().create(userTable);
   }
   get TestPost() {
-    return new PQuery<PostTable, PostRelation>(this.db, postTable);
+    return this.table<PostTable>().create(postTable);
   }
 }

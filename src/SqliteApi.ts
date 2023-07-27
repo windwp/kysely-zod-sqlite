@@ -168,6 +168,22 @@ export class SqliteApi<T> {
       },
     };
   }
+
+  table<V>() {
+    const fn = <
+      R extends {
+        tableName: keyof T & string;
+        relations?: {
+          [key: string]: TableRelation;
+        };
+      }
+    >(
+      innerTable: R
+    ) => {
+      return new PQuery<V, R>(this.db, innerTable);
+    };
+    return fn;
+  }
 }
 
 function mappingQueryOptions<V, R>(
@@ -233,18 +249,25 @@ function mappingRelations<V, R>(
   }
   return query;
 }
+
+type VRelations<Table> = Table extends { relations?: infer X } ? X : never;
+// export type Relations<VTable> =
 /**
  * Save some litte time because I migration from prisma and
  * too many (as any) 😄
  */
 export class PQuery<
   V,
-  VRelations extends { [k: string]: TableRelation } = any,
-  VTable extends { tableName: keyof T & string; relations?: VRelations } = any,
+  VTable extends {
+    tableName: keyof T & string;
+    relations?: {
+      [key: string]: TableRelation;
+    };
+  },
   T extends { [K in keyof T]: { id: string } } = any
 > {
   private tableName: keyof T & string;
-  private relations?: VRelations;
+  private relations?: { [key: string]: TableRelation };
   constructor(private readonly db: Kysely<T>, config: VTable) {
     this.db = db;
     this.tableName = config.tableName;
@@ -258,11 +281,11 @@ export class PQuery<
     }).executeTakeFirst() as Promise<V>;
   }
 
-  selectMany(opts: ShortQueryRelations<V, VRelations>) {
+  selectMany(opts: ShortQueryRelations<V, VRelations<VTable>>) {
     return this.$selectMany(opts).execute() as Promise<V[]>;
   }
 
-  $selectMany(opts: ShortQueryRelations<V, VRelations>) {
+  $selectMany(opts: ShortQueryRelations<V, VRelations<VTable>>) {
     let query = this.db.selectFrom(this.tableName);
     query = mappingQueryOptions(query, opts);
     if (this.relations)
@@ -270,12 +293,12 @@ export class PQuery<
     return query;
   }
 
-  selectFirst(opts: ShortQueryRelations<V, VRelations>) {
+  selectFirst(opts: ShortQueryRelations<V, VRelations<VTable>>) {
     opts.take = 1;
     return this.$selectMany(opts).executeTakeFirst() as Promise<V | undefined>;
   }
 
-  $selectFirst(opts: ShortQueryRelations<V, VRelations>) {
+  $selectFirst(opts: ShortQueryRelations<V, VRelations<VTable>>) {
     opts.take = 1;
     return this.$selectMany(opts);
   }

@@ -1,5 +1,5 @@
 import { TypeOf, z } from 'zod';
-import { TableDefinition } from '../src/types';
+import { TableDefinition, TableRelation } from '../src/types';
 import { zBoolean, zJsonString } from '../src/helpers/zod';
 
 const dataSchema = z.object({
@@ -47,7 +47,7 @@ export const userTable = {
       select: Object.keys(postSchema.shape),
     },
   },
-} satisfies TableDefinition;
+} as const;
 
 export const postTable = {
   tableName: 'TestPost',
@@ -61,8 +61,7 @@ export const postTable = {
       select: Object.keys(userSchema.shape),
     },
   },
-} satisfies TableDefinition;
-
+} as const;
 export type PostTable = TypeOf<typeof postRelationSchema>;
 export type PostRelation = typeof postTable.relations;
 
