@@ -90,15 +90,24 @@ async function D1Handler(
         meta: v[0]?.meta,
         success: v?.[0].success,
         results: v?.[0].results,
-        batch: body.batch.map((o, index) => {
-          return {
-            key: o.key,
-            tableName: o.tableName,
-            results: v[index]?.results,
-          };
-        }),
-      } as any;
+      };
     }
+    case 'bulks': {
+      const result: D1Result = {
+        results: [],
+        success: true,
+        meta: {},
+      };
+      for (const op of body.operations) {
+        const data = await D1Handler(d1, op);
+        result.results.push({
+          key: op.key,
+          results: data.results,
+        });
+      }
+      return result;
+    }
+
     default:
       // @ts-ignore
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
