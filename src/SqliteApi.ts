@@ -285,7 +285,7 @@ function mappingQueryOptions<V, R>(
           Object.keys(opts.where[key] as any)[0] as any,
           Object.values(opts.where[key] as any)[0] as any
         );
-      } else if (opts.where[key]) {
+      } else if (opts.where[key] !== undefined && opts.where[key] !== null) {
         query = query.where(key, '=', opts.where[key]);
       }
     }

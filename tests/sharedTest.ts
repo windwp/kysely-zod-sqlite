@@ -94,10 +94,16 @@ export function runTest(api: TestApi) {
     expect(check[1].isPublished).toBe(false);
     const check2 = await api.TestPost.selectMany({
       where: {
-        isPublished: true,
+        isPublished: false,
       },
     });
     expect(check2.length).toBe(5);
+    const check3 = await api.TestPost.selectMany({
+      where: {
+        isPublished: true,
+      },
+    });
+    expect(check3.length).toBe(5);
   });
 
   it('should be able to do a crud on kysely', async () => {
