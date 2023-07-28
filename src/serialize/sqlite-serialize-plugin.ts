@@ -13,14 +13,14 @@ import { Logger } from 'loglevel';
 export interface SqliteSerializePluginOptions {
   serializer?: SerializeParametersTransformer;
   schema?: any;
-  logger: Logger;
+  logger?: Logger;
 }
 
 export class SqliteSerializePlugin implements KyselyPlugin {
   private serializeParametersTransformer: SerializeParametersTransformer;
   private ctx: WeakMap<QueryId, string>;
   private schema: any;
-  private logger: Logger;
+  private logger?: Logger;
 
   public constructor(opt: SqliteSerializePluginOptions) {
     this.schema = opt.schema;
@@ -50,7 +50,7 @@ export class SqliteSerializePlugin implements KyselyPlugin {
           )
         );
       } catch (error: any) {
-        this.logger.error(rows);
+        this.logger?.error(rows);
         throw new Error(`Parse table: ${tableName} => ${error.message}`);
       }
     }
