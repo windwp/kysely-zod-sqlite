@@ -145,42 +145,43 @@ export class SqliteApi<T> {
           [key in V]:
             | OneActionBody
             | { compile: () => CompiledQuery<T> }
-            | RawBuilder<T>;
+            | RawBuilder<T>
+            | undefined;
         },
     opts?: ApiOptions & { isTransaction: boolean }
   ) {
-    const ops: Array<OneActionBody & { key: string }> = Object.keys(
-      operations
-    ).map((k: any) => {
-      const value = operations[k as V];
-      if ((value as any).compile) {
-        const query: CompiledQuery<T> =
-          value instanceof RawBuilder
-            ? value.compile(this.db)
-            : (value as any).compile();
+    const ops: Array<OneActionBody & { key: string }> = Object.keys(operations)
+      .filter(o => !!o)
+      .map((k: any) => {
+        const value = operations[k as V];
+        if ((value as any).compile) {
+          const query: CompiledQuery<T> =
+            value instanceof RawBuilder
+              ? value.compile(this.db)
+              : (value as any).compile();
 
-        const tableName = (query.query as any).from?.froms[0]?.table.identifier
-          ?.name;
+          const tableName = (query.query as any).from?.froms[0]?.table
+            .identifier?.name;
+          return {
+            key: k,
+            sql: query.sql,
+            tableName: tableName,
+            action:
+              query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
+            parameters: query.parameters,
+          };
+        }
         return {
           key: k,
-          sql: query.sql,
-          tableName: tableName,
-          action: query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          parameters: query.parameters,
-        };
-      }
-      return {
-        key: k,
-        ...value,
-      } as any;
-    });
+          ...value,
+        } as any;
+      });
     const body: DataBody = {
       action: 'bulks',
       isTransaction: opts?.isTransaction ?? false,
       operations: ops,
     };
     const data: BatchResult = await this.execQuery(body, opts);
-    console.log('data', data);
 
     return {
       data: data.rows,
