@@ -10,7 +10,7 @@ export const defaultSerializer = (value: unknown) => {
     return value.toISOString();
   }
   if (typeof value === 'boolean') {
-    return `${value ? 'true' : 'false'}`;
+    return `${value ? 1 : 0}`;
   }
 
   if (value !== null && typeof value === 'object') {
