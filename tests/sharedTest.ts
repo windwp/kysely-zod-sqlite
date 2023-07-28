@@ -387,4 +387,34 @@ export function runTest(api: TestApi) {
     });
     expect(check.length).toBe(1);
   });
+
+  it('insertConflict', async () => {
+    const check = await api.TestUser.insertConflict({
+      create: {
+        name: 'check',
+        email: 'test@gmail.com',
+      },
+      update: {
+        name: 'test',
+      },
+      conflicts: ['email'],
+    });
+    await api.TestUser.insertConflict({
+      create: {
+        name: 'check',
+        email: 'test@gmail.com',
+      },
+      update: {
+        name: 'test2',
+      },
+      conflicts: ['email'],
+    });
+    const check2 = await api.TestUser.selectMany({
+      where: {
+        email: 'test@gmail.com',
+      },
+    });
+    expect(check2.length).toBe(1);
+    expect(check2[0].id).toBe(check.id);
+  });
 }

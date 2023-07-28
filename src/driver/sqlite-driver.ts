@@ -142,6 +142,7 @@ class BetterConnection implements DatabaseConnection {
 
   async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
     let action = (compiledQuery as any).action;
+
     if (!action) {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
@@ -162,6 +163,7 @@ class BetterConnection implements DatabaseConnection {
 
     try {
       const results = await Promise.resolve(handler(this.#db, body));
+      console.log('results', results);
       return Promise.resolve({
         insertId: results.results?.lastInsertRowId
           ? BigInt(results.results?.lastInsertRowId)

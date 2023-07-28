@@ -428,6 +428,35 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
+  /** conflicts columns should be a unique or primary key */
+  async insertConflict(opts: {
+    create: Partial<V> & { id?: string };
+    update: Partial<V>;
+    conflicts: Array<keyof V & string>;
+  }) {
+    await this.$insertConflict(opts).execute();
+    return opts.create;
+  }
+
+  /** conflicts columns should be a unique or primary key */
+  $insertConflict({
+    create,
+    update,
+    conflicts,
+  }: {
+    create: Partial<V> & { id?: string };
+    update: Partial<V>;
+    conflicts: Array<keyof V & string>;
+  }) {
+    if (!create.id) create.id = pid(this.config.idPrefix);
+    return this.db
+      .insertInto(this.config.tableName)
+      .values(create as any)
+      .onConflict(oc =>
+        oc.columns(conflicts as any).doUpdateSet(update as any)
+      );
+  }
+
   async insertMany(values: Array<Partial<V>>) {
     await this.$insertMany(values).execute();
     return values as Array<Partial<V> & { id: string }>;
