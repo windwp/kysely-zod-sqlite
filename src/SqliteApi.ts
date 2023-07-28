@@ -250,16 +250,7 @@ export class SqliteApi<T> {
   }
 
   table<V>() {
-    const fn = <
-      R extends {
-        tableName: keyof T & string;
-        relations?: {
-          [key: string]: TableRelation;
-        };
-      }
-    >(
-      innerTable: R
-    ) => {
+    const fn = <R extends TableDefinition<T>>(innerTable: R) => {
       return new PTable<V, R>(this.db, innerTable);
     };
     return {
