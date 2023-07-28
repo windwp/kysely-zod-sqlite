@@ -1,5 +1,5 @@
 import { TypeOf, z } from 'zod';
-import { zBoolean, zJsonString } from '../src/helpers/zod';
+import { zBoolean, zDate, zJsonString } from '../src/helpers/zod';
 
 const dataSchema = z.object({
   value: z.string(),
@@ -15,8 +15,8 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string().optional(),
   data: zJsonString<UserData>(dataSchema),
-  createdAt: z.union([z.date(), z.string().datetime()]).optional(),
-  updatedAt: z.union([z.date(), z.string().datetime()]),
+  createdAt: zDate,
+  updatedAt: zDate,
 });
 
 export const postSchema = z.object({
@@ -25,8 +25,8 @@ export const postSchema = z.object({
   userId: z.string(),
   isPublished: zBoolean,
   data: z.string(),
-  createdAt: z.union([z.date(), z.string().datetime()]).optional(),
-  updatedAt: z.union([z.date(), z.string().datetime()]).optional(),
+  createdAt: zDate,
+  updatedAt: zDate,
 });
 
 export const postRelationSchema = postSchema.extend({

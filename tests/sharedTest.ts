@@ -1,9 +1,9 @@
 import { beforeAll, beforeEach, expect, it } from 'vitest';
 import { TestApi } from './TestApi';
-import { RawBuilder, sql } from 'kysely';
+import { sql } from 'kysely';
 import { uid } from 'uid';
 import { UserTable } from './kysely-schema';
-import { addDays } from 'date-fns';
+import { addDays, startOfDay } from 'date-fns';
 
 async function textFixture(api: TestApi) {
   api.config.logger?.setLevel('silent');
@@ -19,7 +19,7 @@ async function textFixture(api: TestApi) {
         name: `name${i}`,
         o: { a: i },
       },
-      updatedAt: addDays(new Date(), i),
+      updatedAt: startOfDay(addDays(new Date(), i)),
     };
   });
   await api.TestUser.insertMany(userArr);
@@ -109,7 +109,6 @@ export function runTest(api: TestApi) {
             a: 10,
           },
         },
-        createdAt: new Date(),
         updatedAt: new Date(),
       })
       .executeTakeFirst();
@@ -146,6 +145,18 @@ export function runTest(api: TestApi) {
     {
       const check = await api.TestUser.selectById(userArr[0].id);
       expect(check?.id).toBe(userArr[0].id);
+      expect(check.createdAt instanceof Date).toBeTruthy();
+      expect(check.updatedAt instanceof Date).toBeTruthy();
+    }
+    {
+      const check = await api.TestUser.insertOne({
+        name: 'check',
+        email: 'usercheck@gmail.com',
+        updatedAt: new Date(),
+      });
+      expect(check.id).toBeTruthy();
+      expect(check.createdAt instanceof Date).toBeTruthy();
+      expect(check.updatedAt instanceof Date).toBeTruthy();
     }
     {
       const postArr = Array.from({ length: 10 }).map((_, i) => {
@@ -327,5 +338,14 @@ export function runTest(api: TestApi) {
       expect(topUser[0].posts).toBeTruthy();
       expect(topUser[0].posts?.[0]?.id).toBeTruthy();
     }
+  });
+
+  it('should  compare date', async () => {
+    const check = await api.db
+      .selectFrom('TestUser')
+      .selectAll()
+      .where('updatedAt', '>=', addDays(new Date(), 3))
+      .execute();
+    expect(check.length).toBe(6);
   });
 }

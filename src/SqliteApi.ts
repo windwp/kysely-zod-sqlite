@@ -405,8 +405,9 @@ export class PQuery<
     return query.set(opts.data as any);
   }
 
-  insertOne(value: Partial<V> & { id?: string }) {
-    return this.$insertOne(value).executeTakeFirst();
+  async insertOne(value: Partial<V> & { id?: string }) {
+    await this.$insertOne(value).executeTakeFirst();
+    return value;
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
@@ -418,8 +419,9 @@ export class PQuery<
     return this.db.insertInto(this.tableName).values(value as any);
   }
 
-  insertMany(values: Array<Partial<V> & { id?: string }>) {
-    return this.$insertMany(values).execute();
+  async insertMany(values: Array<Partial<V> & { id?: string }>) {
+    await this.$insertMany(values).execute();
+    return values;
   }
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
