@@ -162,7 +162,7 @@ class BetterConnection implements DatabaseConnection {
     }
 
     try {
-      const results = await Promise.resolve(handler(this.#db, body));
+      const results = handler(this.#db, body);
       return Promise.resolve({
         insertId: results.results?.lastInsertRowId
           ? BigInt(results.results?.lastInsertRowId)

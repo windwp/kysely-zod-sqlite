@@ -4,6 +4,7 @@ import { sql } from 'kysely';
 import { uid } from 'uid';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
+import { pid } from '../src';
 
 async function textFixture(api: TestApi) {
   api.config.logger?.setLevel('silent');
@@ -87,6 +88,8 @@ export function runTest(api: TestApi) {
   });
 
   it('value type boolean should work', async () => {
+    const v = pid();
+    expect(v.length).toBe(18);
     const check = await api.TestPost.selectMany({
       take: 2,
     });
