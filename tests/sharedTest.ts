@@ -48,7 +48,7 @@ export function runTest(api: TestApi) {
       .ifNotExists()
       .addColumn('id', 'text', cb => cb.primaryKey())
       .addColumn('name', 'text')
-      .addColumn('email', 'text', cb => cb.unique())
+      .addColumn('email', 'boolean', cb => cb.unique())
       .addColumn('data', 'text')
       .addColumn('createdAt', 'datetime', cb =>
         cb.defaultTo(sql`CURRENT_TIMESTAMP`)
@@ -62,7 +62,7 @@ export function runTest(api: TestApi) {
       .ifNotExists()
       .addColumn('id', 'text', cb => cb.primaryKey())
       .addColumn('name', 'text')
-      .addColumn('isPublished', 'text', cb => cb.defaultTo(false))
+      .addColumn('isPublished', 'boolean', cb => cb.defaultTo(false))
       .addColumn('data', 'text')
       .addColumn('userId', 'text')
       .addColumn('createdAt', 'datetime', cb =>
@@ -87,11 +87,17 @@ export function runTest(api: TestApi) {
   });
 
   it('value type boolean should work', async () => {
-    const first = await api.TestPost.selectMany({
+    const check = await api.TestPost.selectMany({
       take: 2,
     });
-    expect(first[0].isPublished).toBe(true);
-    expect(first[1].isPublished).toBe(false);
+    expect(check[0].isPublished).toBe(true);
+    expect(check[1].isPublished).toBe(false);
+    const check2 = await api.TestPost.selectMany({
+      where: {
+        isPublished: true,
+      },
+    });
+    expect(check2.length).toBe(5);
   });
 
   it('should be able to do a crud on kysely', async () => {
