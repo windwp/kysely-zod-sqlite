@@ -348,4 +348,14 @@ export function runTest(api: TestApi) {
       .execute();
     expect(check.length).toBe(6);
   });
+
+  it('select where undefined is skip', async () => {
+    const first = await api.TestUser.selectFirst({
+      where: {
+        name: undefined,
+        id: userArr[0].id,
+      },
+    });
+    expect(first).toBeTruthy();
+  });
 }
