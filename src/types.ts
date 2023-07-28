@@ -9,9 +9,12 @@ export type DbConfig = {
   logger?: Logger;
   options?: ApiOptions;
 };
-export type ApiOptions = { retry?: number; showSql?: boolean };
+export type ApiOptions = {
+  retry?: number;
+  showSql?: boolean;
+};
 
-export type DataBody =
+export type OneActionBody =
   | {
       action: 'selectFirst' | 'run' | 'selectAll';
       sql: string;
@@ -25,12 +28,18 @@ export type DataBody =
   | {
       action: 'batchAllSmt';
       batch: {
-        key: string;
         sql: string;
         tableName: string;
         parameters: readonly any[];
         action: 'selectFirst' | 'run' | 'selectAll';
       }[];
+    };
+export type DataBody =
+  | OneActionBody
+  | {
+      action: 'bulks';
+      isTransaction: boolean;
+      operations: Array<OneActionBody & { key: string; tableName?: string }>;
     };
 
 export type TableRelation = {
@@ -78,4 +87,13 @@ export type ShortQueryRelations<V, R> = ShortQuery<V> & {
           select: Array<keyof V>;
         };
   };
+};
+
+export type BatchQuery = {
+  key: string;
+  fnc: 'batchOneSmt' | 'batchAllSmt' | 'selectById' | 'selectMany';
+};
+
+export type BatchResult = {
+  rows: { key: string; results: any[]; tableName: string }[];
 };

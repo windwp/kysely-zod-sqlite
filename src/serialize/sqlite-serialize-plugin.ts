@@ -8,19 +8,23 @@ import type {
 } from 'kysely';
 import type { QueryId } from 'kysely/dist/cjs/util/query-id';
 import { SerializeParametersTransformer } from './sqlite-serialize-transformer';
+import { Logger } from 'loglevel';
 
 export interface SqliteSerializePluginOptions {
   serializer?: SerializeParametersTransformer;
   schema?: any;
+  logger: Logger;
 }
 
 export class SqliteSerializePlugin implements KyselyPlugin {
   private serializeParametersTransformer: SerializeParametersTransformer;
   private ctx: WeakMap<QueryId, string>;
   private schema: any;
+  private logger: Logger;
 
-  public constructor(opt: SqliteSerializePluginOptions = {}) {
+  public constructor(opt: SqliteSerializePluginOptions) {
     this.schema = opt.schema;
+    this.logger = opt.logger;
     this.serializeParametersTransformer = new SerializeParametersTransformer();
     this.ctx = new WeakMap();
   }
@@ -39,11 +43,16 @@ export class SqliteSerializePlugin implements KyselyPlugin {
 
   private parseResult(rows: any[], tableName: string) {
     if (this.schema?.[tableName]) {
-      return Promise.resolve(
-        rows.map(row =>
-          this.schema[tableName].partial().passthrough().parse(row)
-        )
-      );
+      try {
+        return Promise.resolve(
+          rows.map(row =>
+            this.schema[tableName].partial().passthrough().parse(row)
+          )
+        );
+      } catch (error: any) {
+        this.logger.error(rows);
+        throw new Error(`Parse table: ${tableName} => ${error.message}`);
+      }
     }
     return rows;
   }

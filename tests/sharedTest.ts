@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, expect, it } from 'vitest';
 import { TestApi } from './TestApi';
-import { sql } from 'kysely';
+import { RawBuilder, sql } from 'kysely';
 import { uid } from 'uid';
 import { UserTable } from './kysely-schema';
 import { addDays } from 'date-fns';
@@ -19,7 +19,7 @@ async function textFixture(api: TestApi) {
         name: `name${i}`,
         o: { a: i },
       },
-      updateAt: addDays(new Date(), i),
+      updatedAt: addDays(new Date(), i),
     };
   });
   await api.TestUser.insertMany(userArr);
@@ -50,7 +50,10 @@ export function runTest(api: TestApi) {
       .addColumn('name', 'text')
       .addColumn('email', 'text', cb => cb.unique())
       .addColumn('data', 'text')
-      .addColumn('updateAt', 'datetime', cb =>
+      .addColumn('createdAt', 'datetime', cb =>
+        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
+      )
+      .addColumn('updatedAt', 'datetime', cb =>
         cb.defaultTo(sql`CURRENT_TIMESTAMP`)
       )
       .execute();
@@ -62,6 +65,12 @@ export function runTest(api: TestApi) {
       .addColumn('isPublished', 'text', cb => cb.defaultTo(false))
       .addColumn('data', 'text')
       .addColumn('userId', 'text')
+      .addColumn('createdAt', 'datetime', cb =>
+        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
+      )
+      .addColumn('updatedAt', 'datetime', cb =>
+        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
+      )
       .addForeignKeyConstraint(
         'Post_userId_fkey',
         ['userId'],
@@ -86,7 +95,6 @@ export function runTest(api: TestApi) {
   });
 
   it('should be able to do a crud on kysely', async () => {
-    // const insertModel = await api.run(
     const testId = '123456';
     await api.db
       .insertInto('TestUser')
@@ -101,10 +109,10 @@ export function runTest(api: TestApi) {
             a: 10,
           },
         },
-        updateAt: new Date(),
-      } as any)
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .executeTakeFirst();
-    // );
     const first = await api.db
       .selectFrom('TestUser')
       .where('id', '=', testId)
@@ -185,7 +193,7 @@ export function runTest(api: TestApi) {
       skip: 2,
       take: 4,
       orderBy: {
-        updateAt: 'desc',
+        updatedAt: 'desc',
       },
     });
     expect(check[0].id).toBe(userArr[7].id);
@@ -271,26 +279,53 @@ export function runTest(api: TestApi) {
       expect(check0?.data?.value).toBe('aaa');
     }
     {
-      const result = await api.batchAllSmt([
-        {
-          key: 'user',
-          sql: api.db.selectFrom('TestUser').selectAll(),
-        },
-        {
-          key: 'insertUser',
-          sql: api.db.insertInto('TestPost').values({
-            id: uid(),
-            name: 'post',
-            data: '',
-            isPublished: true,
-            userId: userArr[0].id,
-          }),
-        },
+      await api.batchOneSmt(sql`update TestUser set name = ? where id = ?`, [
+        ['user2', userArr[0].id],
       ]);
-      const users = result.getMany<UserTable>('user');
+    }
+    {
+      const result = await api.batchAllSmt([
+        api.db.selectFrom('TestUser').selectAll(),
+        api.db.insertInto('TestPost').values({
+          id: uid(),
+          name: 'post',
+          data: '',
+          isPublished: true,
+          userId: userArr[0].id,
+        }),
+      ]);
+      const users = result.getMany<UserTable>(0);
       expect(users.length).toBe(10);
-      const post = result.getFirst<any>('insertUser');
+      const post = result.getOne<any>(1);
       expect(post.changes).toBe(1);
+    }
+  });
+  it('bulks should working', async () => {
+    {
+      const check = await api.bulk({
+        user: api.$batchOneSmt(
+          api.db
+            .updateTable('TestUser')
+            .set({
+              data: sql` json_set(data, '$.value', ?)`,
+            })
+            .where('name', '=', '?'),
+          [
+            ['aaa', 'user0'],
+            ['bbb', 'user1'],
+          ]
+        ),
+        topUser: api.TestUser.$selectMany({
+          take: 10,
+          include: {
+            posts: true,
+          },
+        }),
+      });
+      const topUser = check.getMany<UserTable>('topUser');
+      expect(topUser.length).toBe(10);
+      expect(topUser[0].posts).toBeTruthy();
+      expect(topUser[0].posts?.[0]?.id).toBeTruthy();
     }
   });
 }

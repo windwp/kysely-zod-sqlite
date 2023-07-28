@@ -121,18 +121,6 @@ class D1Connection implements DatabaseConnection {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
     }
-    if ((compiledQuery as any).batch) {
-      (compiledQuery as any).batch = Object.keys(
-        (compiledQuery as any).batch
-      ).map((k: string) => {
-        const v = (compiledQuery as any).batch[k];
-        return {
-          action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          sql: v.sql,
-          parameters: v.parameters,
-        };
-      });
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {
@@ -140,11 +128,11 @@ class D1Connection implements DatabaseConnection {
       database: this.#config.database,
       ...rest,
     };
+
     if ((compiledQuery as any).opts?.showSql) {
       this.#config.logger?.info(`SQL: ${body.sql}`);
-    } else {
-      this.#config.logger?.debug('body', body);
     }
+    this.#config.logger?.debug(body);
 
     try {
       const results = await D1Handler(this.#d1, body);

@@ -55,12 +55,10 @@ export function handler(db: Database, body: DataBody) {
     success: boolean;
     meta: any;
     results: any;
-    batch: any[];
   } = {
     success: true,
     meta: {},
-    batch: [],
-    results: null,
+    results: [],
   };
   switch (body.action) {
     case 'run':
@@ -85,34 +83,44 @@ export function handler(db: Database, body: DataBody) {
       break;
     case 'batchOneSmt': {
       const stmt = db.prepare(body.sql);
-      result.batch = [];
-      db.transaction(values => {
-        for (const v of values) {
-          result.batch.push(stmt.run(v));
-        }
-      })(body.batchParams);
+      for (const v of body.batchParams) {
+        result.results.push(stmt.run(v));
+      }
       break;
     }
     case 'batchAllSmt': {
       if (body.batch) {
-        db.transaction(() => {
-          console.log('body.batch', body.batch);
-          for (const v of body.batch) {
-            if (v.action === 'selectAll') {
-              result.batch.push({
-                key: v.key,
-                tableName: v.tableName,
-                results: db.prepare(v.sql).all(...v.parameters),
-              });
-            } else {
-              result.batch.push({
-                key: v.key,
-                tableName: v.tableName,
-                results: db.prepare(v.sql).run(...v.parameters),
+        for (const v of body.batch) {
+          if (v.action === 'selectAll') {
+            result.results.push(db.prepare(v.sql).all(...v.parameters));
+          } else {
+            result.results.push(db.prepare(v.sql).run(...v.parameters));
+          }
+        }
+      }
+      break;
+    }
+    case 'bulks': {
+      if (body.operations) {
+        if (body.isTransaction) {
+          db.transaction(() => {
+            for (const op of body.operations) {
+              const data = handler(db, op);
+              result.results.push({
+                key: op.key,
+                results: data.results,
               });
             }
+          })();
+        } else {
+          for (const op of body.operations) {
+            const data = handler(db, op);
+            result.results.push({
+              key: op.key,
+              results: data.results,
+            });
           }
-        })();
+        }
       }
       break;
     }

@@ -66,9 +66,8 @@ class FetchConnection implements DatabaseConnection {
 
     if ((compiledQuery as any).opts?.showSql) {
       this.#config.logger?.info(`SQL: ${body.sql}`);
-    } else {
-      this.#config.logger?.debug('body', body);
     }
+    this.#config.logger?.debug(body);
 
     const res = await fetch(this.#config.apiUrl, {
       method: 'POST',

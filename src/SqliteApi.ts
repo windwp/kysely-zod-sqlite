@@ -17,6 +17,8 @@ import {
   QueryWhere,
   ShortQueryRelations,
   TableRelation,
+  BatchResult,
+  OneActionBody,
 } from './types';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
@@ -54,7 +56,12 @@ export class SqliteApi<T> {
         createQueryCompiler: () => new SqliteQueryCompiler(),
         createDriver: () => driver,
       },
-      plugins: [new SqliteSerializePlugin({ schema: schema.shape })],
+      plugins: [
+        new SqliteSerializePlugin({
+          schema: schema.shape,
+          logger: config.logger,
+        }),
+      ],
     });
   }
 
@@ -62,8 +69,7 @@ export class SqliteApi<T> {
     return this.#db;
   }
   protected execQuery(body: any, options?: ApiOptions) {
-    const opts = options || this.config.options;
-    body.opts = opts;
+    body.opts = options ?? this.config.options;
     return this.#db.executeQuery(body) as any;
   }
 
@@ -110,29 +116,103 @@ export class SqliteApi<T> {
   batchOneSmt<
     V extends SelectQueryBuilder<T, any, any> | InsertQueryBuilder<T, any, any>
   >(
-    sqlQuery: { compile: () => CompiledQuery<T> },
+    sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
     batchParams: Array<readonly any[]>,
     opts?: ApiOptions
   ): Promise<ExtractResultFromQuery<V>[]> {
-    const query = sqlQuery.compile();
-    const body: DataBody = {
+    return this.execQuery(this.$batchOneSmt(sqlQuery, batchParams), opts)
+      ?.batch;
+  }
+
+  $batchOneSmt(
+    sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
+    batchParams: Array<readonly any[]>
+  ): OneActionBody {
+    const query =
+      sqlQuery instanceof RawBuilder
+        ? sqlQuery.compile(this.db)
+        : sqlQuery.compile();
+    return {
       action: 'batchOneSmt',
       sql: query.sql,
       batchParams,
     };
-    return this.execQuery(body, opts);
   }
 
-  async batchAllSmt<
-    V extends {
-      sql: { compile: () => CompiledQuery<T> };
-      key: string;
-    }[]
-  >(sqlQuerys: V, opts?: ApiOptions) {
+  async bulk<V extends string>(
+    operations:
+      | {
+          [key in V]:
+            | OneActionBody
+            | { compile: () => CompiledQuery<T> }
+            | RawBuilder<T>;
+        },
+    opts?: ApiOptions & { isTransaction: boolean }
+  ) {
+    const ops: Array<OneActionBody & { key: string }> = Object.keys(
+      operations
+    ).map((k: any) => {
+      const value = operations[k as V];
+      if ((value as any).compile) {
+        const query: CompiledQuery<T> =
+          value instanceof RawBuilder
+            ? value.compile(this.db)
+            : (value as any).compile();
+
+        const tableName = (query.query as any).from?.froms[0]?.table.identifier
+          ?.name;
+        return {
+          key: k,
+          sql: query.sql,
+          tableName: tableName,
+          action: query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
+          parameters: query.parameters,
+        };
+      }
+      return {
+        key: k,
+        ...value,
+      } as any;
+    });
     const body: DataBody = {
+      action: 'bulks',
+      isTransaction: opts?.isTransaction ?? false,
+      operations: ops,
+    };
+    const data: BatchResult = await this.execQuery(body, opts);
+    console.log('data', data);
+
+    return {
+      data: data.rows,
+      getOne: <X = any>(key: V, tableName?: keyof T): X | undefined => {
+        const v = data.rows.find(o => o.key === key);
+        if (!v) throw new Error(`wrong key ${key}`);
+        const name =
+          tableName ??
+          body.operations.find(o => o.key === key)?.tableName ??
+          '';
+        return this.parseOne(v.results, name as any);
+      },
+      getMany: <X = any>(key: V, tableName?: string): X[] => {
+        const v = data.rows.find(o => o.key === key);
+        if (!v) throw new Error(`wrong key ${key}`);
+        const name =
+          tableName ??
+          body.operations.find(o => o.key === key)?.tableName ??
+          '';
+        return this.parseMany(v.results, name as any);
+      },
+    };
+  }
+
+  async batchAllSmt(
+    sqlQuerys: Array<{ compile: () => CompiledQuery<T> }>,
+    opts?: ApiOptions
+  ) {
+    const body = {
       action: 'batchAllSmt',
       batch: sqlQuerys.map(o => {
-        const v = o.sql.compile();
+        const v = o.compile();
         const tableName = (v.query as any).from?.froms[0]?.table.identifier
           ?.name;
         return {
@@ -140,31 +220,31 @@ export class SqliteApi<T> {
           parameters: v.parameters,
           action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
           tableName: tableName,
-          key: o.key,
         };
       }),
     };
-    const data: {
-      batch: { key: string; results: any[]; tableName: string }[];
-    } = await this.execQuery(body, opts);
-
-    const fn = <X = any>(key: string): X[] => {
-      const v = data.batch.find(o => o.key === key);
-      if (!v) return [];
-      if (!v.tableName || !(this.schema as any).shape[v.tableName]) {
-        return v.results as X[];
-      }
-      return v.results.map((this.schema as any).shape[v.tableName].parse);
-    };
-
+    const data: { rows: any[] } = await this.execQuery(body, opts);
     return {
-      data: data.batch,
-      getFirst: <X = any>(key: string): X | undefined => {
-        const d = fn(key);
-        return Array.isArray(d) ? d?.[0] : d;
+      data: data.rows,
+      getOne: <X = any>(index: number): X | undefined => {
+        return this.parseOne(data.rows[index], body.batch[index].tableName);
       },
-      getMany: <X = any>(key: string): X[] => fn(key),
+      getMany: <X = any>(index: number): X[] => {
+        return this.parseMany(data.rows[index], body.batch[index].tableName);
+      },
     };
+  }
+
+  parseOne<X = any>(data: any, tableName: keyof T) {
+    if (!data || !(this.schema as any).shape[tableName]) return data;
+    return (this.schema as any).shape[tableName]?.parse(data) as X;
+  }
+
+  parseMany<X = any>(data: any[], tableName: keyof T) {
+    if (!(this.schema as any).shape[tableName]) return data;
+    return data.map(o =>
+      (this.schema as any).shape[tableName]?.parse(o)
+    ) as X[];
   }
 
   table<V>() {
@@ -330,8 +410,10 @@ export class PQuery<
 
   $insertOne(value: Partial<V> & { id?: string }) {
     if (!value.id) value.id = uid();
-    (value as any).createdAt = new Date();
-    (value as any).updatedAt = new Date();
+    // @ts-ignore
+    if (!value.createdAt) value.createdAt = new Date();
+    // @ts-ignore
+    if (!value.updatedAt) value.updatedAt = new Date();
     return this.db.insertInto(this.tableName).values(value as any);
   }
 
@@ -342,8 +424,8 @@ export class PQuery<
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
     values.forEach((o: any) => {
       if (!o.id) o.id = uid();
-      o.createdAt = new Date();
-      o.updateAt = new Date();
+      if (!o.createdAt) o.createdAt = new Date();
+      if (!o.updatedAt) o.updatedAt = new Date();
     });
     return this.db.insertInto(this.tableName).values(values as any);
   }
