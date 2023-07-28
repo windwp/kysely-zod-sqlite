@@ -1,4 +1,4 @@
-import { PQuery, SqliteApi } from '../src/SqliteApi';
+import { PTable, SqliteApi } from '../src/SqliteApi';
 import {
   Database,
   PostTable,

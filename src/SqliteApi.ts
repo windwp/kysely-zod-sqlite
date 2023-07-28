@@ -8,7 +8,6 @@ import {
   Driver,
   CompiledQuery,
   RawBuilder,
-  sql,
 } from 'kysely';
 import {
   DbConfig,
@@ -20,11 +19,12 @@ import {
   TableRelation,
   BatchResult,
   OneActionBody,
+  TableDefinition,
 } from './types';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { z } from 'zod';
-import { uid } from 'uid';
+import { pid } from './helpers/pid';
 
 export interface Apdater {
   fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
@@ -260,7 +260,7 @@ export class SqliteApi<T> {
     >(
       innerTable: R
     ) => {
-      return new PQuery<V, R>(this.db, innerTable);
+      return new PTable<V, R>(this.db, innerTable);
     };
     return {
       create: fn,
@@ -334,24 +334,15 @@ function mappingRelations<V, R>(
 
 type VRelations<Table> = Table extends { relations?: infer X } ? X : never;
 /**
- * Save some litte time because I migration from prisma and
+ * Save some litte time because I migration from prisma.
  */
-export class PQuery<
+export class PTable<
   V,
-  VTable extends {
-    tableName: keyof T & string;
-    relations?: {
-      [key: string]: TableRelation;
-    };
-  },
+  VTable extends TableDefinition<T>,
   T extends { [K in keyof T]: { id: string } } = any
 > {
-  private tableName: keyof T & string;
-  private relations?: { [key: string]: TableRelation };
-  constructor(private readonly db: Kysely<T>, config: VTable) {
+  constructor(private readonly db: Kysely<T>, public config: VTable) {
     this.db = db;
-    this.tableName = config.tableName;
-    this.relations = config.relations;
   }
 
   selectById(id: string, select?: Array<keyof V>) {
@@ -370,10 +361,15 @@ export class PQuery<
   }
 
   $selectMany(opts: ShortQueryRelations<V, VRelations<VTable>>) {
-    let query = this.db.selectFrom(this.tableName);
+    let query = this.db.selectFrom(this.config.tableName);
     query = mappingQueryOptions(query, opts);
-    if (this.relations)
-      query = mappingRelations(query, this.tableName, this.relations, opts);
+    if (this.config.relations)
+      query = mappingRelations(
+        query,
+        this.config.tableName,
+        this.config.relations,
+        opts
+      );
     return query;
   }
 
@@ -394,7 +390,7 @@ export class PQuery<
   $updateById(id: string, v: Partial<V>) {
     (v as any).updatedAt = new Date();
     return this.db
-      .updateTable(this.tableName)
+      .updateTable(this.config.tableName)
       .where('id', '=', id as any)
       .set(v as any);
   }
@@ -404,7 +400,7 @@ export class PQuery<
   }
 
   $updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
-    let query = this.db.updateTable(this.tableName);
+    let query = this.db.updateTable(this.config.tableName);
     query = mappingQueryOptions(query, opts, false);
     (opts.data as any).updatedAt = new Date();
     return query.set(opts.data as any);
@@ -413,12 +409,11 @@ export class PQuery<
   updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
     return this.$updateOne(opts).executeTakeFirst();
   }
-
   // https://stackoverflow.com/questions/10074756/update-top-in-sqlite
   $updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
-    let query = this.db.updateTable(this.tableName);
+    let query = this.db.updateTable(this.config.tableName);
     (opts.data as any).updatedAt = new Date();
-    let selectQuery = this.db.selectFrom(this.tableName);
+    let selectQuery = this.db.selectFrom(this.config.tableName);
     opts.take = 1;
     opts.select = ['id'] as any;
     selectQuery = mappingQueryOptions(selectQuery, opts);
@@ -432,12 +427,14 @@ export class PQuery<
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
-    if (!value.id) value.id = uid();
-    // @ts-ignore
-    if (!value.createdAt) value.createdAt = new Date();
-    // @ts-ignore
-    if (!value.updatedAt) value.updatedAt = new Date();
-    return this.db.insertInto(this.tableName).values(value as any);
+    if (!value.id) value.id = pid(this.config.idPrefix);
+    if (this.config.timeStamp) {
+      // @ts-ignore
+      if (!value.createdAt) value.createdAt = new Date();
+      // @ts-ignore
+      if (!value.updatedAt) value.updatedAt = new Date();
+    }
+    return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
   async insertMany(values: Array<Partial<V> & { id?: string }>) {
@@ -447,11 +444,13 @@ export class PQuery<
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
     values.forEach((o: any) => {
-      if (!o.id) o.id = uid();
-      if (!o.createdAt) o.createdAt = new Date();
-      if (!o.updatedAt) o.updatedAt = new Date();
+      if (!o.id) o.id = pid(this.config.idPrefix);
+      if (this.config.timeStamp) {
+        if (!o.createdAt) o.createdAt = new Date();
+        if (!o.updatedAt) o.updatedAt = new Date();
+      }
     });
-    return this.db.insertInto(this.tableName).values(values as any);
+    return this.db.insertInto(this.config.tableName).values(values as any);
   }
 
   deleteById(id: string) {
@@ -459,7 +458,9 @@ export class PQuery<
   }
 
   $deleteById(id: string) {
-    return this.db.deleteFrom(this.tableName).where('id', '=', id as any);
+    return this.db
+      .deleteFrom(this.config.tableName)
+      .where('id', '=', id as any);
   }
 
   deleteMany(opts: { where?: QueryWhere<V> }) {
@@ -467,13 +468,13 @@ export class PQuery<
   }
 
   $deleteMany({ where }: { where?: QueryWhere<V> }) {
-    let query = this.db.deleteFrom(this.tableName);
+    let query = this.db.deleteFrom(this.config.tableName);
     query = mappingQueryOptions(query, { where }, false);
     return query;
   }
 
   async count({ where }: { where: QueryWhere<V> }) {
-    let query = this.db.selectFrom(this.tableName);
+    let query = this.db.selectFrom(this.config.tableName);
     query = query.select(eb => eb.fn.count('id').as('count'));
     query = mappingQueryOptions(query, { where }, false);
     const data: any = await query.executeTakeFirst();

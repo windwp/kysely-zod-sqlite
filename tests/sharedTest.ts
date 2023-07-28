@@ -155,6 +155,7 @@ export function runTest(api: TestApi) {
         updatedAt: new Date(),
       });
       expect(check.id).toBeTruthy();
+      expect(check.id?.startsWith('u_')).toBeTruthy();
       expect(check.createdAt instanceof Date).toBeTruthy();
       expect(check.updatedAt instanceof Date).toBeTruthy();
     }

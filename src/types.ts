@@ -50,10 +50,13 @@ export type TableRelation = {
   select: string[];
   type: 'OneToMany' | 'OneToOne';
 };
-export type TableDefinition<T, R> = {
+
+export type TableDefinition<T> = {
   tableName: keyof T & string;
+  idPrefix?: string;
+  timeStamp?: boolean;
   relations?: {
-    [key in keyof R]: TableRelation;
+    [key: string]: TableRelation;
   };
 };
 
@@ -87,11 +90,6 @@ export type ShortQueryRelations<V, R> = ShortQuery<V> & {
           select: Array<keyof V>;
         };
   };
-};
-
-export type BatchQuery = {
-  key: string;
-  fnc: 'batchOneSmt' | 'batchAllSmt' | 'selectById' | 'selectMany';
 };
 
 export type BatchResult = {

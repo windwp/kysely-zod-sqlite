@@ -1,5 +1,6 @@
 import { TypeOf, z } from 'zod';
 import { zBoolean, zDate, zJsonString } from '../src/helpers/zod';
+import { TableDefinition } from '../src/types';
 
 const dataSchema = z.object({
   value: z.string(),
@@ -39,6 +40,8 @@ export const userRelationSchema = userSchema.extend({
 
 export const userTable = {
   tableName: 'TestUser',
+  idPrefix: 'u',
+  timeStamp: true,
   relations: {
     posts: {
       refTarget: 'userId',
@@ -53,6 +56,8 @@ export const userTable = {
 
 export const postTable = {
   tableName: 'TestPost',
+  idPrefix: 'po',
+  timeStamp: true,
   relations: {
     user: {
       ref: 'userId',
@@ -65,10 +70,8 @@ export const postTable = {
   },
 } as const;
 export type PostTable = TypeOf<typeof postRelationSchema>;
-export type PostRelation = typeof postTable.relations;
 
 export type UserTable = TypeOf<typeof userRelationSchema>;
-export type UserRelation = typeof userTable.relations;
 
 export const dbSchema = z.object({
   TestUser: userRelationSchema,
