@@ -354,10 +354,14 @@ export class PQuery<
   }
 
   selectById(id: string, select?: Array<keyof V>) {
+    return this.$selectById(id, select).executeTakeFirst() as Promise<V>;
+  }
+
+  $selectById(id: string, select?: Array<keyof V>) {
     return this.$selectFirst({
       where: { id } as any,
       select,
-    }).executeTakeFirst() as Promise<V>;
+    });
   }
 
   selectMany(opts: ShortQueryRelations<V, VRelations<VTable>>) {

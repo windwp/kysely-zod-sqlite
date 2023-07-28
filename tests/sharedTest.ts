@@ -355,7 +355,10 @@ export function runTest(api: TestApi) {
         name: undefined,
         id: userArr[0].id,
       },
+      select: ['id', 'name'],
     });
     expect(first).toBeTruthy();
+    expect(first?.name).toBeTruthy();
+    expect(first?.data).toBeFalsy();
   });
 }
