@@ -152,9 +152,9 @@ export class SqliteApi<T> {
     opts?: ApiOptions & { isTransaction: boolean }
   ) {
     const ops: Array<OneActionBody & { key: string }> = Object.keys(operations)
-      .filter(o => !!o)
       .map((k: any) => {
         const value = operations[k as V];
+        if (!value) return undefined;
         if ((value as any).compile) {
           const query: CompiledQuery<T> =
             value instanceof RawBuilder
@@ -176,7 +176,8 @@ export class SqliteApi<T> {
           key: k,
           ...value,
         } as any;
-      });
+      })
+      .filter(o => o);
     const body: DataBody = {
       action: 'bulks',
       isTransaction: opts?.isTransaction ?? false,

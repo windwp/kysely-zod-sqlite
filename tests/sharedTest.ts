@@ -345,6 +345,7 @@ export function runTest(api: TestApi) {
             posts: true,
           },
         }),
+        check: undefined,
       });
       const topUser = check.getMany<UserTable>('topUser');
       expect(topUser.length).toBe(10);
