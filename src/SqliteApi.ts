@@ -193,6 +193,9 @@ export class SqliteApi<T> {
           tableName ??
           body.operations.find(o => o.key === key)?.tableName ??
           '';
+        if (Array.isArray(v.results)) {
+          return this.parseMany(v.results, name as any)?.[0];
+        }
         return this.parseOne(v.results, name as any);
       },
       getMany: <X = any>(key: V, tableName?: string): X[] => {
@@ -229,6 +232,12 @@ export class SqliteApi<T> {
     return {
       data: data.rows,
       getOne: <X = any>(index: number): X | undefined => {
+        if (Array.isArray(data.rows[index])) {
+          return this.parseMany(
+            data.rows[index],
+            body.batch[index].tableName
+          )?.[0];
+        }
         return this.parseOne(data.rows[index], body.batch[index].tableName);
       },
       getMany: <X = any>(index: number): X[] => {
