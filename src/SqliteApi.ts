@@ -8,6 +8,7 @@ import {
   Driver,
   CompiledQuery,
   RawBuilder,
+  sql,
 } from 'kysely';
 import {
   DbConfig,
@@ -406,6 +407,22 @@ export class PQuery<
     let query = this.db.updateTable(this.tableName);
     query = mappingQueryOptions(query, opts, false);
     (opts.data as any).updatedAt = new Date();
+    return query.set(opts.data as any);
+  }
+
+  updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
+    return this.$updateOne(opts).executeTakeFirst();
+  }
+
+  // https://stackoverflow.com/questions/10074756/update-top-in-sqlite
+  $updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
+    let query = this.db.updateTable(this.tableName);
+    (opts.data as any).updatedAt = new Date();
+    let selectQuery = this.db.selectFrom(this.tableName);
+    opts.take = 1;
+    opts.select = ['id'] as any;
+    selectQuery = mappingQueryOptions(selectQuery, opts);
+    query = query.where('id', 'in', selectQuery);
     return query.set(opts.data as any);
   }
 

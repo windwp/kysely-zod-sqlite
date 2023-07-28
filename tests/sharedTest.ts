@@ -361,4 +361,29 @@ export function runTest(api: TestApi) {
     expect(first?.name).toBeTruthy();
     expect(first?.data).toBeFalsy();
   });
+
+  it('updateOne should working', async () => {
+    const all = await api.TestUser.selectMany({
+      where: {
+        name: {
+          like: 'user%',
+        },
+      },
+    });
+    expect(all.length).toBe(10);
+    await api.TestUser.updateOne({
+      where: {
+        name: {
+          like: 'user%',
+        },
+      },
+      data: {
+        name: 'check',
+      },
+    });
+    const check = await api.TestUser.selectMany({
+      where: { name: 'check' },
+    });
+    expect(check.length).toBe(1);
+  });
 }
