@@ -414,7 +414,7 @@ export class PTable<
 
   async insertOne(value: Partial<V> & { id?: string }) {
     await this.$insertOne(value).executeTakeFirst();
-    return value;
+    return value as Partial<V> & { id: string };
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
@@ -428,9 +428,9 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
-  async insertMany(values: Array<Partial<V> & { id?: string }>) {
+  async insertMany(values: Array<Partial<V>>) {
     await this.$insertMany(values).execute();
-    return values;
+    return values as Array<Partial<V> & { id: string }>;
   }
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
