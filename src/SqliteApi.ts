@@ -386,11 +386,12 @@ export class PTable<
 
   async updateById(
     id: string,
-    value: Partial<V>
+    value: Partial<V & { id?: string }>
   ): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
+    if (value.id) delete value.id;
     return await this.$updateById(id, value).executeTakeFirst();
   }
 
@@ -450,6 +451,16 @@ export class PTable<
       if (!value.updatedAt) value.updatedAt = new Date();
     }
     return this.db.insertInto(this.config.tableName).values(value as any);
+  }
+
+  async insertOrUpdate(
+    value: Partial<V> & { id?: string }
+  ): Promise<Partial<V> & { id: string }> {
+    if (value.id) {
+      await this.updateOne({ where: { id: value.id } as any, data: value });
+      return value as any;
+    }
+    return this.insertOne(value);
   }
 
   /** conflicts columns should be a unique or primary key */
