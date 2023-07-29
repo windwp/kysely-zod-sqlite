@@ -346,11 +346,11 @@ export class PTable<
     this.db = db;
   }
 
-  selectById(id: string, select?: Array<keyof V>) {
+  selectById(id: string, select?: Readonly<Array<keyof V>>) {
     return this.$selectById(id, select).executeTakeFirst() as Promise<V>;
   }
 
-  $selectById(id: string, select?: Array<keyof V>) {
+  $selectById(id: string, select?: Readonly<Array<keyof V>>) {
     return this.$selectFirst({
       where: { id } as any,
       select,
@@ -396,7 +396,9 @@ export class PTable<
   }
 
   $updateById(id: string, value: Partial<V>) {
-    (value as any).updatedAt = new Date();
+    if (this.config.timeStamp) {
+      (value as any).updatedAt = new Date();
+    }
     return this.db
       .updateTable(this.config.tableName)
       .where('id', '=', id as any)
@@ -413,7 +415,9 @@ export class PTable<
   $updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
     let query = this.db.updateTable(this.config.tableName);
     query = mappingQueryOptions(query, opts, false);
-    (opts.data as any).updatedAt = new Date();
+    if (this.config.timeStamp) {
+      (opts.data as any).updatedAt = new Date();
+    }
     return query.set(opts.data as any);
   }
 
@@ -426,7 +430,9 @@ export class PTable<
   // https://stackoverflow.com/questions/10074756/update-top-in-sqlite
   $updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
     let query = this.db.updateTable(this.config.tableName);
-    (opts.data as any).updatedAt = new Date();
+    if (this.config.timeStamp) {
+      (opts.data as any).updatedAt = new Date();
+    }
     let selectQuery = this.db.selectFrom(this.config.tableName);
     opts.take = 1;
     opts.select = ['id'] as any;

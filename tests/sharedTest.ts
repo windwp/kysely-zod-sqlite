@@ -437,7 +437,8 @@ export function runTest(api: TestApi) {
     const user = await api.TestUser.selectById(userArr[0].id);
     user.email = 'checkok@gmail.com';
     await api.TestUser.updateById(user.id, user);
-    const check = await api.TestUser.selectById(userArr[0].id);
+    const select = ['email', 'id'] as const;
+    const check = await api.TestUser.selectById(userArr[0].id, select);
     expect(check.email).toBe('checkok@gmail.com');
   });
 }
