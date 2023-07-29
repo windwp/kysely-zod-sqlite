@@ -454,13 +454,17 @@ export class PTable<
   }
 
   async insertOrUpdate(
-    value: Partial<V> & { id?: string }
+    opts: ShortQuery<V> & { data: Partial<V & { id?: string }> }
   ): Promise<Partial<V> & { id: string }> {
-    if (value.id) {
-      await this.updateOne({ where: { id: value.id } as any, data: value });
-      return value as any;
+    if (opts.data.id) {
+      await this.updateOne({
+        where: { id: opts.data.id, ...opts.where } as any,
+        data: opts.data,
+      });
+      return opts.data as any;
     }
-    return this.insertOne(value);
+    Object.assign(opts.data, opts.where);
+    return this.insertOne(opts.data);
   }
 
   /** conflicts columns should be a unique or primary key */
