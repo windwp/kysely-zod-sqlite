@@ -1,5 +1,5 @@
 import { uid as id } from 'uid';
 //increase default
-export function uid(length = 18) {
+export function uid(length = 24) {
   return id(length);
 }

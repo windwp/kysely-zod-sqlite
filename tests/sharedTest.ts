@@ -1,7 +1,6 @@
 import { beforeAll, beforeEach, expect, it } from 'vitest';
 import { TestApi } from './TestApi';
 import { sql } from 'kysely';
-import { uid } from 'uid';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { uid } from '../src';
