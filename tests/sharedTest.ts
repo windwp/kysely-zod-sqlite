@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { uid } from 'uid';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
-import { pid } from '../src';
+import { uid } from '../src';
 
 async function textFixture(api: TestApi) {
   api.config.logger?.setLevel('silent');
@@ -88,8 +88,8 @@ export function runTest(api: TestApi) {
   });
 
   it('value type boolean should work', async () => {
-    const v = pid();
-    expect(v.length).toBe(18);
+    const v = uid();
+    expect(v.length).toBe(24);
     const check = await api.TestPost.selectMany({
       take: 2,
     });
@@ -170,7 +170,7 @@ export function runTest(api: TestApi) {
         updatedAt: new Date(),
       });
       expect(check.id).toBeTruthy();
-      expect(check.id?.startsWith('u_')).toBeTruthy();
+      expect(check.id?.length).toBe(24);
       expect(check.createdAt instanceof Date).toBeTruthy();
       expect(check.updatedAt instanceof Date).toBeTruthy();
     }

@@ -53,7 +53,6 @@ export type TableRelation = {
 
 export type TableDefinition<T> = {
   tableName: keyof T & string;
-  idPrefix?: string;
   timeStamp?: boolean;
   relations?: {
     [key: string]: TableRelation;

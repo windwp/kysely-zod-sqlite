@@ -24,7 +24,7 @@ import {
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { z } from 'zod';
-import { pid } from './helpers/pid';
+import { uid } from './helpers/uid';
 
 export interface Apdater {
   fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
@@ -449,7 +449,7 @@ export class PTable<
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
-    if (!value.id) value.id = pid(this.config.idPrefix);
+    if (!value.id) value.id = uid();
     if (this.config.timeStamp) {
       // @ts-ignore
       if (!value.createdAt) value.createdAt = new Date();
@@ -493,7 +493,7 @@ export class PTable<
     update: Partial<V>;
     conflicts: Array<keyof V & string>;
   }) {
-    if (!create.id) create.id = pid(this.config.idPrefix);
+    if (!create.id) create.id = uid();
     return this.db
       .insertInto(this.config.tableName)
       .values(create as any)
@@ -509,7 +509,7 @@ export class PTable<
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
     values.forEach((o: any) => {
-      if (!o.id) o.id = pid(this.config.idPrefix);
+      if (!o.id) o.id = uid();
       if (this.config.timeStamp) {
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();

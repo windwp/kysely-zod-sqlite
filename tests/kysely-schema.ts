@@ -40,7 +40,6 @@ export const userRelationSchema = userSchema.extend({
 
 export const userTable = {
   tableName: 'TestUser',
-  idPrefix: 'u',
   timeStamp: true,
   relations: {
     posts: {
@@ -56,7 +55,6 @@ export const userTable = {
 
 export const postTable = {
   tableName: 'TestPost',
-  idPrefix: 'po',
   timeStamp: true,
   relations: {
     user: {
