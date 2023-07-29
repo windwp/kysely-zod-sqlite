@@ -73,7 +73,7 @@ export type QueryWhere<V> = {
 };
 
 export type ShortQuery<V> = {
-  select?: Array<keyof V>;
+  select?: Readonly<Array<keyof V>>;
   where?: QueryWhere<V>;
   skip?: number;
   take?: number;

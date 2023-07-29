@@ -384,19 +384,28 @@ export class PTable<
     return this.$selectMany(opts);
   }
 
-  updateById(id: string, v: Partial<V>) {
-    return this.$updateById(id, v).execute();
+  async updateById(
+    id: string,
+    value: Partial<V>
+  ): Promise<{
+    numUpdatedRows: bigint;
+    numChangedRows?: bigint;
+  }> {
+    return await this.$updateById(id, value).executeTakeFirst();
   }
 
-  $updateById(id: string, v: Partial<V>) {
-    (v as any).updatedAt = new Date();
+  $updateById(id: string, value: Partial<V>) {
+    (value as any).updatedAt = new Date();
     return this.db
       .updateTable(this.config.tableName)
       .where('id', '=', id as any)
-      .set(v as any);
+      .set(value as any);
   }
 
-  updateMany(opts: ShortQuery<V> & { data: Partial<V> }) {
+  updateMany(opts: ShortQuery<V> & { data: Partial<V> }): Promise<{
+    numUpdatedRows: bigint;
+    numChangedRows?: bigint;
+  }> {
     return this.$updateMany(opts).executeTakeFirst();
   }
 
@@ -407,8 +416,11 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
-    return this.$updateOne(opts).executeTakeFirst();
+  async updateOne(opts: ShortQuery<V> & { data: Partial<V> }): Promise<{
+    numUpdatedRows: bigint;
+    numChangedRows?: bigint;
+  }> {
+    return await this.$updateOne(opts).executeTakeFirst();
   }
   // https://stackoverflow.com/questions/10074756/update-top-in-sqlite
   $updateOne(opts: ShortQuery<V> & { data: Partial<V> }) {
@@ -486,8 +498,7 @@ export class PTable<
   }
 
   async deleteById(id: string): Promise<{ numDeletedRows: BigInt }> {
-    const v = await this.$deleteById(id).execute();
-    return v[0];
+    return await this.$deleteById(id).executeTakeFirst();
   }
 
   $deleteById(id: string) {
@@ -499,8 +510,7 @@ export class PTable<
   async deleteMany(opts: {
     where?: QueryWhere<V>;
   }): Promise<{ numDeletedRows: BigInt }> {
-    const v = await this.$deleteMany(opts).execute();
-    return v[0];
+    return await this.$deleteMany(opts).executeTakeFirst();
   }
 
   $deleteMany({ where }: { where?: QueryWhere<V> }) {
