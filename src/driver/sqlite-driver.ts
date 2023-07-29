@@ -174,8 +174,8 @@ class BetterConnection implements DatabaseConnection {
     } catch (error: any) {
       this.#config.logger.error('[SQL_ERROR]=========================');
       this.#config.logger.error(body.sql);
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw new Error(`${error.message}\n ${body.sql}`);
+      this.#config.logger.error(body.parameters);
+      throw new Error(`${error.message}\n`);
     }
   }
 

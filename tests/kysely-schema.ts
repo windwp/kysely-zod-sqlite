@@ -1,5 +1,5 @@
 import { TypeOf, z } from 'zod';
-import { zBoolean, zDate, zJsonString } from '../src/helpers/zod';
+import { zBoolean, zDate, zJsonObject, zJsonSchema } from '../src/helpers/zod';
 import { TableDefinition } from '../src/types';
 
 const dataSchema = z.object({
@@ -15,7 +15,7 @@ export const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().optional(),
-  data: zJsonString<UserData>(dataSchema),
+  data: zJsonObject<UserData>(),
   createdAt: zDate,
   updatedAt: zDate,
 });
@@ -31,11 +31,11 @@ export const postSchema = z.object({
 });
 
 export const postRelationSchema = postSchema.extend({
-  user: zJsonString(userSchema).optional(),
+  user: zJsonSchema(userSchema).optional(),
 });
 
 export const userRelationSchema = userSchema.extend({
-  posts: zJsonString(z.array(postRelationSchema)).optional(),
+  posts: zJsonSchema(z.array(postRelationSchema)).optional(),
 });
 
 export const userTable = {
