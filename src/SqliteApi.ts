@@ -422,7 +422,9 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  async insertOne(value: Partial<V> & { id?: string }) {
+  async insertOne(
+    value: Partial<V> & { id?: string }
+  ): Promise<Partial<V> & { id: string }> {
     await this.$insertOne(value).executeTakeFirst();
     return value as Partial<V> & { id: string };
   }
@@ -467,9 +469,9 @@ export class PTable<
       );
   }
 
-  async insertMany(values: Array<Partial<V>>) {
+  async insertMany(values: Array<Partial<V>>): Promise<V[]> {
     await this.$insertMany(values).execute();
-    return values as Array<Partial<V> & { id: string }>;
+    return values as V[];
   }
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
@@ -483,8 +485,9 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(values as any);
   }
 
-  deleteById(id: string) {
-    return this.$deleteById(id).execute();
+  async deleteById(id: string): Promise<{ numDeletedRows: BigInt }> {
+    const v = await this.$deleteById(id).execute();
+    return v[0];
   }
 
   $deleteById(id: string) {
@@ -493,8 +496,11 @@ export class PTable<
       .where('id', '=', id as any);
   }
 
-  deleteMany(opts: { where?: QueryWhere<V> }) {
-    return this.$deleteMany(opts).execute();
+  async deleteMany(opts: {
+    where?: QueryWhere<V>;
+  }): Promise<{ numDeletedRows: BigInt }> {
+    const v = await this.$deleteMany(opts).execute();
+    return v[0];
   }
 
   $deleteMany({ where }: { where?: QueryWhere<V> }) {
@@ -503,7 +509,7 @@ export class PTable<
     return query;
   }
 
-  async count({ where }: { where: QueryWhere<V> }) {
+  async count({ where }: { where: QueryWhere<V> }): Promise<number> {
     let query = this.db.selectFrom(this.config.tableName);
     query = query.select(eb => eb.fn.count('id').as('count'));
     query = mappingQueryOptions(query, { where }, false);
