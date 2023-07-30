@@ -4,7 +4,7 @@ import { parse, parseISO } from 'date-fns';
 // some custom zod to parse sqlite data
 export const zBoolean = z.custom<boolean>().transform(value => {
   if (typeof value === 'boolean') return value;
-  return value === 1;
+  return value === 1 || value === 'true';
 });
 
 // parse json and parse child with schema
