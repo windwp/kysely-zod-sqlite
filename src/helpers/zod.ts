@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { parse, parseISO } from 'date-fns';
 
 // some custom zod to parse sqlite data
+
 export const zBoolean = z.custom<boolean>().transform(value => {
   if (typeof value === 'boolean') return value;
   return value === 1 || value === 'true';
@@ -12,6 +13,7 @@ export function zJsonSchema<T>(schema: z.Schema<T>) {
   return z.custom<T>().transform((v, ctx): T => {
     if (!v) return v;
     if (typeof v === 'string') {
+      if (v === '') return {} as any;
       try {
         return schema.parse(JSON.parse(v));
       } catch (e: any) {
@@ -25,11 +27,31 @@ export function zJsonSchema<T>(schema: z.Schema<T>) {
     return v;
   });
 }
-// only parse json dont' care child object
+
+export function zJsonSchemaArray<T>(schema: z.Schema<T>) {
+  return z.custom<T>().transform((v, ctx): T => {
+    if (!v) return v;
+    if (typeof v === 'string') {
+      if (v === '') return [] as any;
+      try {
+        return schema.parse(JSON.parse(v));
+      } catch (e: any) {
+        ctx.addIssue({
+          code: 'custom',
+          message: e.message,
+        });
+        return z.NEVER;
+      }
+    }
+    return v;
+  });
+}
+/* only parse json don't care child struct*/
 export function zJsonObject<T>() {
   return z.custom<T>().transform((v, ctx): T => {
     if (!v) return v;
     if (typeof v === 'string') {
+      if (v === '') return {} as any;
       try {
         return JSON.parse(v);
       } catch (e: any) {
