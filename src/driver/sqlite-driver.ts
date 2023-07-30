@@ -175,7 +175,7 @@ class BetterConnection implements DatabaseConnection {
       this.#config.logger.error('[SQL_ERROR]=========================');
       this.#config.logger.error(body.sql);
       this.#config.logger.error(body.parameters);
-      throw new Error(`${error.message}\n`);
+      return { rows: [], insertId: undefined };
     }
   }
 
