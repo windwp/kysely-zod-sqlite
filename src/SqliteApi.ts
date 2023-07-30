@@ -459,27 +459,29 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
-  /** for a non unique key if a key is unique use InsertConflict */
+  /**
+   * if data already have id it will only do update
+   * it use for a non unique key if a key is unique use InsertConflict
+   */
   async insertOrUpdate(opts: {
-    create: Partial<V> & { id?: string };
-    update: Partial<V> & { id?: string };
-    where: QueryWhere<V>;
+    data: Partial<V> & { id?: string };
+    where?: QueryWhere<V>;
   }): Promise<Partial<V> & { id: string }> {
-    if (opts.update.id) {
+    if (opts.data.id) {
       await this.updateOne({
-        where: { id: opts.update.id, ...opts.where } as any,
-        data: opts.update,
+        where: { id: opts.data.id, ...opts.where } as any,
+        data: opts.data,
       });
-      return opts.update as any;
+      return opts.data as any;
     }
+    opts.data.id = uid();
+    if (!opts.where) await this.insertOne(opts.data);
     const check = await this.selectFirst(opts);
     if (!check) {
-      opts.create.id = uid();
-      Object.assign(opts.create, opts.where);
-      return await this.insertOne(opts.create);
+      return await this.insertOne(opts.data);
     }
-    await this.updateOne({ where: opts.where, data: opts.update });
-    return opts.update as any;
+    await this.updateOne({ where: opts.where, data: opts.data });
+    return opts.data as any;
   }
 
   /** conflicts columns should be a unique or primary key */

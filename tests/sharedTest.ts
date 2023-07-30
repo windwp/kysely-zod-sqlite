@@ -449,12 +449,9 @@ export function runTest(api: TestApi) {
           data: 'insertOrUpdate',
           userId: userArr[0].id,
         },
-        create: {
-          name: 'check@gmail.com',
+        data: {
           data: 'insertOrUpdate',
           userId: userArr[0].id,
-        },
-        update: {
           name: 'check_update@gmail.com',
         },
       });
