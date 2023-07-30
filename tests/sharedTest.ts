@@ -440,4 +440,43 @@ export function runTest(api: TestApi) {
     const check = await api.TestUser.selectById(userArr[0].id, select);
     expect(check.email).toBe('checkok@gmail.com');
   });
+
+  it('insert or update', async () => {
+    api.config.logger?.setLevel('debug');
+    for (let index = 0; index < 5; index++) {
+      await api.TestPost.insertOrUpdate({
+        where: {
+          data: 'insertOrUpdate',
+          userId: userArr[0].id,
+        },
+        create: {
+          name: 'check@gmail.com',
+          data: 'insertOrUpdate',
+          userId: userArr[0].id,
+        },
+        update: {
+          name: 'check_update@gmail.com',
+        },
+      });
+    }
+    const check = await api.TestPost.selectMany({
+      where: {
+        data: 'insertOrUpdate',
+      },
+    });
+    expect(check[0].name).toBe('check_update@gmail.com');
+    expect(check[0].id).toBeTruthy();
+    expect(check.length).toBe(1);
+  });
+
+  it('innerJoin is not automatic parse', async () => {
+    const data = await api.db
+      .selectFrom('TestPost')
+      .limit(1)
+      .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
+      .selectAll()
+      .execute();
+    const check = api.parseMany<UserTable>(data, 'TestUser');
+    expect(check[0].data.o).toBeTruthy();
+  });
 }

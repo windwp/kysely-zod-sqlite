@@ -459,18 +459,27 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
-  async insertOrUpdate(
-    opts: ShortQuery<V> & { data: Partial<V & { id?: string }> }
-  ): Promise<Partial<V> & { id: string }> {
-    if (opts.data.id) {
+  // for a non unique key if a key is unique use InsertConflict
+  async insertOrUpdate(opts: {
+    create: Partial<V> & { id?: string };
+    update: Partial<V> & { id?: string };
+    where: QueryWhere<V>;
+  }): Promise<Partial<V> & { id: string }> {
+    if (opts.update.id) {
       await this.updateOne({
-        where: { id: opts.data.id, ...opts.where } as any,
-        data: opts.data,
+        where: { id: opts.update.id, ...opts.where } as any,
+        data: opts.update,
       });
-      return opts.data as any;
+      return opts.update as any;
     }
-    Object.assign(opts.data, opts.where);
-    return this.insertOne(opts.data);
+    const check = await this.selectFirst(opts);
+    if (!check) {
+      opts.create.id = uid();
+      Object.assign(opts.create, opts.where);
+      return await this.insertOne(opts.create);
+    }
+    await this.updateOne({ where: opts.where, data: opts.update });
+    return opts.update as any;
   }
 
   /** conflicts columns should be a unique or primary key */

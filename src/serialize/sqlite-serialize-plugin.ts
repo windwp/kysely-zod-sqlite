@@ -31,7 +31,7 @@ export class SqliteSerializePlugin implements KyselyPlugin {
 
   public transformQuery(args: PluginTransformQueryArgs): RootOperationNode {
     const { node, queryId } = args;
-    if (node.kind === 'SelectQueryNode') {
+    if (node.kind === 'SelectQueryNode' && !node.joins) {
       const tableName = (node as any).from?.froms[0]?.table.identifier?.name;
       if (tableName) {
         this.ctx.set(queryId, tableName);
