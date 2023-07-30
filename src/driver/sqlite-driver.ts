@@ -156,7 +156,7 @@ class BetterConnection implements DatabaseConnection {
       ...rest,
     };
 
-    this.#config.logger?.debug('body', body);
+    this.#config.logger?.debug(body);
     if ((compiledQuery as any).opts?.showSql) {
       this.#config.logger?.info(`SQL: ${body.sql}`);
     }
