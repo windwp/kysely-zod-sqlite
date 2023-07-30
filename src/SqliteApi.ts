@@ -459,7 +459,7 @@ export class PTable<
     return this.db.insertInto(this.config.tableName).values(value as any);
   }
 
-  // for a non unique key if a key is unique use InsertConflict
+  /** for a non unique key if a key is unique use InsertConflict */
   async insertOrUpdate(opts: {
     create: Partial<V> & { id?: string };
     update: Partial<V> & { id?: string };
