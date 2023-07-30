@@ -247,12 +247,12 @@ export class SqliteApi<T> {
     };
   }
 
-  parseOne<X = any>(data: any, tableName: keyof T) {
+  parseOne<X = any>(data: any, tableName: keyof T): X {
     if (!data || !(this.schema as any).shape[tableName]) return data;
     return (this.schema as any).shape[tableName]?.parse(data) as X;
   }
 
-  parseMany<X = any>(data: any[], tableName: keyof T) {
+  parseMany<X = any>(data: any[], tableName: keyof T): X[] {
     if (!(this.schema as any).shape[tableName]) return data;
     return data.map(o =>
       (this.schema as any).shape[tableName]?.parse(o)
