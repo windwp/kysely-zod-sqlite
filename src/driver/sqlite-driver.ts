@@ -172,9 +172,11 @@ class BetterConnection implements DatabaseConnection {
         numAffectedRows: results.results?.changes ?? undefined,
       } as any);
     } catch (error: any) {
-      this.#config.logger.error('[SQL_ERROR]=========================');
-      this.#config.logger.error(body.sql);
-      this.#config.logger.error(body.parameters);
+      this.#config.logger?.error('[SQL_ERROR=========================');
+      this.#config.logger?.error(error.message);
+      this.#config.logger?.error(body.sql);
+      this.#config.logger?.error(body.parameters);
+      this.#config.logger?.error('===================================]');
       return { rows: [], insertId: undefined };
     }
   }

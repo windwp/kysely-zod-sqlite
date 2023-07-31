@@ -27,11 +27,18 @@ const api = new TestApi({
 const db = new Database(':memory:');
 
 global.fetch = vi.fn((_, options) => {
-  const data = handler(db, JSON.parse(options?.body as string));
-  return Promise.resolve({
-    json: () => new Promise(resolve => resolve(data)),
-    ok: true,
-  } as any);
+  try {
+    const data = handler(db, JSON.parse(options?.body as string));
+
+    return Promise.resolve({
+      json: () => new Promise(resolve => resolve(data)),
+      ok: true,
+    } as any);
+  } catch (error: any) {
+    loglevel.error('Fetch ================');
+    loglevel.error(error);
+    return Promise.resolve({ text: () => error.message, ok: false });
+  }
 });
 describe('FetchDriver', () => {
   afterAll(() => {

@@ -161,10 +161,11 @@ class D1Connection implements DatabaseConnection {
         numUpdatedOrDeletedRows: numAffectedRows,
       } as any;
     } catch (error: any) {
-      this.#config.logger?.error('[SQL_ERROR]=========================');
+      this.#config.logger?.error('[SQL_ERROR=========================');
+      this.#config.logger?.error(error.message);
       this.#config.logger?.error(body.sql);
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw new Error(`${error.message}\n ${body.sql}`);
+      this.#config.logger?.error(body.parameters);
+      this.#config.logger?.error('===================================]');
     }
   }
 
