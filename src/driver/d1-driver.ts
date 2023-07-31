@@ -166,6 +166,7 @@ class D1Connection implements DatabaseConnection {
       this.#config.logger?.error(body.sql);
       this.#config.logger?.error(body.parameters);
       this.#config.logger?.error('===================================]');
+      return { rows: [], insertId: undefined };
     }
   }
 
