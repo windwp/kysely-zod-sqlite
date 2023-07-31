@@ -23,7 +23,7 @@ export type OneActionBody =
   | {
       action: 'batchOneSmt';
       sql: string;
-      batchParams: Array<readonly any[]>;
+      parameters: Array<readonly any[]>;
     }
   | {
       action: 'batchAllSmt';

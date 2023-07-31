@@ -83,7 +83,7 @@ export function handler(db: Database, body: DataBody) {
       break;
     case 'batchOneSmt': {
       const stmt = db.prepare(body.sql);
-      for (const v of body.batchParams) {
+      for (const v of body.parameters) {
         result.results.push(stmt.run(v));
       }
       break;

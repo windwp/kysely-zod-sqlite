@@ -282,7 +282,7 @@ export function runTest(api: TestApi) {
     expect(result?.posts?.[0].userId).toBe(userArr[0].id);
   });
 
-  it('batch should working', async () => {
+  it('batchone should working', async () => {
     {
       await api.batchOneSmt(
         api.db
@@ -309,6 +309,27 @@ export function runTest(api: TestApi) {
         ['user2', userArr[0].id],
       ]);
     }
+  });
+  it('batchone with value is an object', async () => {
+    const newUsers: Partial<UserTable>[] = ['user0', 'user1'].map(o => ({
+      name: o,
+      email: `${o}@gmail.com`,
+      data: {
+        name: '2',
+        value: '',
+        o: {
+          a: 1,
+        },
+      },
+    }));
+    await api.batchOneSmt(
+      api.db.updateTable('TestUser').set(newUsers[0]).where('name', '=', '?'),
+      newUsers.map(o => {
+        return [...Object.values(o), o.name];
+      })
+    );
+  });
+  it('batchAll should work ', async () => {
     {
       const result = await api.batchAllSmt([
         api.db.selectFrom('TestUser').selectAll(),

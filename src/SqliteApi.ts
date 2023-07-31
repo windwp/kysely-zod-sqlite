@@ -25,6 +25,7 @@ import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { z } from 'zod';
 import { uid } from './helpers/uid';
+import { defaultSerializer } from 'kysely-plugin-serialize';
 
 export interface Apdater {
   fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
@@ -111,14 +112,15 @@ export class SqliteApi<T> {
   }
 
   /**
-   * use this api to excute one sql query with multiple parameters
+   * use this api to execute one sql query with multiple parameters
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
+   * care about *order* of parameters
    */
   batchOneSmt<
     V extends SelectQueryBuilder<T, any, any> | InsertQueryBuilder<T, any, any>
   >(
     sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
-    batchParams: Array<readonly any[]>,
+    batchParams: Array<any[]>,
     opts?: ApiOptions
   ): Promise<ExtractResultFromQuery<V>[]> {
     return this.execQuery(this.$batchOneSmt(sqlQuery, batchParams), opts)
@@ -127,16 +129,21 @@ export class SqliteApi<T> {
 
   $batchOneSmt(
     sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
-    batchParams: Array<readonly any[]>
+    batchParams: Array<any[]>
   ): OneActionBody {
     const query =
       sqlQuery instanceof RawBuilder
         ? sqlQuery.compile(this.db)
         : sqlQuery.compile();
+    batchParams.forEach(o => {
+      o.forEach((v, index) => {
+        o[index] = defaultSerializer(v);
+      });
+    });
     return {
       action: 'batchOneSmt',
       sql: query.sql,
-      batchParams,
+      parameters: batchParams,
     };
   }
 

@@ -72,7 +72,7 @@ async function D1Handler(
     case 'batchOneSmt': {
       const stmt = d1.prepare(body.sql);
       const v = await d1.batch(
-        body.batchParams.map((o: any) => stmt.bind(...o))
+        body.parameters.map((o: any) => stmt.bind(...o))
       );
       return {
         meta: v[0]?.meta,
