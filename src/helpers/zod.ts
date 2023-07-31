@@ -28,11 +28,11 @@ export function zJsonSchema<T>(schema: z.Schema<T>) {
   });
 }
 
-export function zJsonSchemaArray<T>(schema: z.Schema<T>) {
-  return z.custom<T>().transform((v, ctx): T => {
+export function zJsonSchemaArray<T>(schema: z.Schema<T[]>) {
+  return z.custom<T[]>().transform((v, ctx): T[] => {
     if (!v) return v;
     if (typeof v === 'string') {
-      if (v === '') return [] as any;
+      if (v === '') return [];
       try {
         return schema.parse(JSON.parse(v));
       } catch (e: any) {
