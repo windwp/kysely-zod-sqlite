@@ -235,7 +235,7 @@ export function runTest(api: TestApi) {
     expect(result).toBe(5);
   });
 
-  it('relationselect one', async () => {
+  it('select with relation one', async () => {
     {
       const topPost = await api.TestPost.selectMany({
         take: 1,
@@ -270,7 +270,7 @@ export function runTest(api: TestApi) {
     }
   });
 
-  it('relation select many working', async () => {
+  it('select relaton array working', async () => {
     const result = await api.TestUser.selectFirst({
       where: {
         id: userArr[0].id,
@@ -377,7 +377,7 @@ export function runTest(api: TestApi) {
     }
   });
 
-  it('should  compare date', async () => {
+  it('should compare date', async () => {
     const check = await api.db
       .selectFrom('TestUser')
       .selectAll()
@@ -386,7 +386,7 @@ export function runTest(api: TestApi) {
     expect(check.length).toBe(6);
   });
 
-  it('select where undefined is skip', async () => {
+  it('select where will ignore field is undefined', async () => {
     const first = await api.TestUser.selectFirst({
       where: {
         name: undefined,
@@ -424,7 +424,7 @@ export function runTest(api: TestApi) {
     expect(check.length).toBe(1);
   });
 
-  it('insertConflict', async () => {
+  it('insertConflict is working', async () => {
     const check = await api.TestUser.insertConflict({
       create: {
         name: 'check',

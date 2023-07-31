@@ -69,34 +69,37 @@ class FetchConnection implements DatabaseConnection {
     }
     this.#config.logger?.debug(body);
 
-    const res = await fetch(this.#config.apiUrl, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': this.#config.apiKey,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      const results = await res.json();
-      return {
-        insertId: results.results?.lastInsertRowId
-          ? BigInt(results.results?.lastInsertRowId)
-          : undefined,
-        rows: results.results,
-        batch: results.batch,
-        numAffectedRows: results.results?.changes ?? undefined,
-      } as any;
-    } else {
-      this.#config.logger?.error('[FetchDriver] Error');
-      this.#config.logger?.error(body);
-      return {
-        insertId: undefined,
-        rows: [],
-      };
+    try {
+      const res = await fetch(this.#config.apiUrl, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.#config.apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const results = await res.json();
+        return {
+          insertId: results.results?.lastInsertRowId
+            ? BigInt(results.results?.lastInsertRowId)
+            : undefined,
+          rows: results.results,
+          batch: results.batch,
+          numAffectedRows: results.results?.changes ?? undefined,
+        } as any;
+      }
+    } catch (error: any) {
+      this.#config.logger?.error(error.message);
     }
+
+    this.#config.logger?.error('[FetchDriver] Error');
+    this.#config.logger?.error(body);
+    return {
+      insertId: undefined,
+      rows: [],
+    };
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await, require-yield
