@@ -487,6 +487,27 @@ export function runTest(api: TestApi) {
     expect(check.length).toBe(1);
   });
 
+  it('insert or update with empty where', async () => {
+    api.config.logger?.setLevel('debug');
+    const v = await api.TestPost.insertOrUpdate({
+      data: {
+        data: 'insertOrUpdate',
+        userId: userArr[0].id,
+        name: 'update@gmail.com',
+      },
+    });
+    v.name = 'insertOrUpdate@gmail.com';
+    await api.TestPost.insertOrUpdate({
+      data: v,
+    });
+    const item = await api.TestPost.selectFirst({
+      where: {
+        name: v.name,
+      },
+    });
+    expect(item?.id).toBe(v.id);
+  });
+
   it('innerJoin is not automatic parse', async () => {
     const data = await api.db
       .selectFrom('TestPost')

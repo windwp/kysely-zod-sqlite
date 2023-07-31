@@ -316,8 +316,9 @@ function mappingRelations<V, R>(
 }
 
 type VRelations<Table> = Table extends { relations?: infer X } ? X : never;
+
 /**
- * Save some litte time because I migration from prisma.
+ * Api is inspire by Prisma
  */
 export class PTable<
   V,
@@ -442,7 +443,7 @@ export class PTable<
   }
 
   /**
-   * if data already have id it will only do update
+   * if data already have id then It only do update
    * it use for a non unique key if a key is unique use InsertConflict
    */
   async insertOrUpdate(opts: {
@@ -457,7 +458,11 @@ export class PTable<
       return opts.data as any;
     }
     opts.data.id = uid();
-    if (!opts.where) await this.insertOne(opts.data);
+    if (!opts.where) {
+      await this.insertOne(opts.data);
+      return opts.data as any;
+    }
+
     const check = await this.selectFirst(opts);
     if (!check) {
       return await this.insertOne(opts.data);
