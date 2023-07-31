@@ -124,7 +124,7 @@ class D1Connection implements DatabaseConnection {
     this.#config = config;
   }
 
-  async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
+  async executeQuery<T>(compiledQuery: CompiledQuery): Promise<QueryResult<T>> {
     let action = (compiledQuery as any).action;
 
     if (!action) {
@@ -154,11 +154,9 @@ class D1Connection implements DatabaseConnection {
           results.meta.last_row_id === null
             ? undefined
             : BigInt(results.meta.last_row_id),
-        rows: (results.results as O[]) || [],
+        rows: (results.results as T[]) || [],
         batch: (results as any).batch,
         numAffectedRows,
-        // @ts-ignore deprecated in kysely >= 0.23, keep for backward compatibility.
-        numUpdatedOrDeletedRows: numAffectedRows,
       } as any;
     } catch (error: any) {
       this.#config.logger?.error('[SQL_ERROR=========================');

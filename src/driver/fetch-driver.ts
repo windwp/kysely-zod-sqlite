@@ -81,21 +81,21 @@ class FetchConnection implements DatabaseConnection {
 
     if (res.ok) {
       const results = await res.json();
-      return Promise.resolve({
+      return {
         insertId: results.results?.lastInsertRowId
           ? BigInt(results.results?.lastInsertRowId)
           : undefined,
         rows: results.results,
         batch: results.batch,
         numAffectedRows: results.results?.changes ?? undefined,
-      });
+      } as any;
     } else {
       this.#config.logger?.error('[FetchDriver] Error');
-      this.#config.logger?.error(`${await res.text()}`);
-      return Promise.resolve({
+      this.#config.logger?.error(body);
+      return {
         insertId: undefined,
         rows: [],
-      });
+      };
     }
   }
 

@@ -75,36 +75,14 @@ export class SqliteApi<T> {
     return this.#db.executeQuery(body) as any;
   }
 
-  run(
-    sqlQuery: { compile: () => CompiledQuery<T> },
-    opts?: ApiOptions
-  ): Promise<{ changes: number; lastInsertRowId: number }> {
-    const query = sqlQuery.compile();
-    const body: DataBody = {
-      action: 'run',
-      sql: query.sql,
-      parameters: query.parameters,
-    };
-    return this.execQuery(body, opts);
-  }
-
   runSql<T = any>(
-    sqlQuery: RawBuilder<T>,
+    sqlQuery: RawBuilder<T> | { compile: () => CompiledQuery<T> },
+    action: 'run' | 'selectAll' = 'run',
     opts?: ApiOptions
   ): Promise<{ changes: number; lastInsertRowId: number }> {
     const query = sqlQuery.compile(this.db);
     const body: DataBody = {
-      action: 'run',
-      sql: query.sql,
-      parameters: query.parameters,
-    };
-    return this.execQuery(body, opts);
-  }
-
-  allSql<T = any>(sqlQuery: RawBuilder<T>, opts?: ApiOptions): Promise<T[]> {
-    const query = sqlQuery.compile(this.db);
-    const body: DataBody = {
-      action: 'selectAll',
+      action: action,
       sql: query.sql,
       parameters: query.parameters,
     };
@@ -163,10 +141,7 @@ export class SqliteApi<T> {
         const value = operations[k as V];
         if (!value) return undefined;
         if ((value as any).compile) {
-          const query: CompiledQuery<T> =
-            value instanceof RawBuilder
-              ? value.compile(this.db)
-              : (value as any).compile();
+          const query: CompiledQuery<T> = (value as any).compile(this.db);
 
           const tableName = (query.query as any).from?.froms[0]?.table
             .identifier?.name;
