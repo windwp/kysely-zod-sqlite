@@ -41,4 +41,3 @@ export function jsonObjectFrom<O>(
   )}) from ${expr} as obj)`;
 }
 
-

@@ -1,6 +1,6 @@
-import { ComparisonOperatorExpression } from 'kysely';
+import type { ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
 import type { Logger } from 'loglevel';
-import { ZodObject } from 'zod';
+import type { ZodObject } from 'zod';
 
 export type DbConfig = {
   apiUrl: string;
@@ -29,7 +29,7 @@ export type OneActionBody =
       action: 'batchAllSmt';
       batch: {
         sql: string;
-        tableName: string;
+        table: string;
         parameters: readonly any[];
         action: 'selectFirst' | 'run' | 'selectAll';
       }[];
@@ -39,20 +39,21 @@ export type DataBody =
   | {
       action: 'bulks';
       isTransaction: boolean;
-      operations: Array<OneActionBody & { key: string; tableName?: string }>;
+      operations: Array<OneActionBody & { key: string; table?: string }>;
     };
 
 export type TableRelation = {
   ref: string;
   table: string;
   refTarget: string;
-  alias: string;
-  select: string[];
-  type: 'OneToMany' | 'OneToOne';
+  select?: string[];
+  schema?: ZodObject<any, any>;
+  type: 'many' | 'one';
 };
 
 export type TableDefinition<T> = {
-  tableName: keyof T & string;
+  schema?: ZodObject<any, any>;
+  table: keyof T & string;
   timeStamp?: boolean;
   relations?: {
     [key: string]: TableRelation;
@@ -71,7 +72,7 @@ export type QueryWhere<V> = {
       };
 };
 
-export type ShortQuery<V> = {
+export type Query<V> = {
   select?: Readonly<Array<keyof V>>;
   where?: QueryWhere<V>;
   skip?: number;
@@ -81,7 +82,7 @@ export type ShortQuery<V> = {
   };
 };
 
-export type ShortQueryRelations<V, R> = ShortQuery<V> & {
+export type QueryRelations<V, R> = Query<V> & {
   include?: {
     [k in keyof R]?:
       | boolean
@@ -92,5 +93,17 @@ export type ShortQueryRelations<V, R> = ShortQuery<V> & {
 };
 
 export type BatchResult = {
-  rows: { key: string; results: any[]; tableName: string }[];
+  rows: { key: string; results: any[]; table: string }[];
 };
+
+export interface Apdater {
+  fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
+}
+
+export type ExtractResultFromQuery<T> = T extends SelectQueryBuilder<
+  any,
+  any,
+  infer Z
+>
+  ? Z
+  : never;

@@ -32,26 +32,26 @@ export class SqliteSerializePlugin implements KyselyPlugin {
   public transformQuery(args: PluginTransformQueryArgs): RootOperationNode {
     const { node, queryId } = args;
     if (node.kind === 'SelectQueryNode' && !node.joins) {
-      const tableName = (node as any).from?.froms[0]?.table.identifier?.name;
-      if (tableName) {
-        this.ctx.set(queryId, tableName);
+      const table = (node as any).from?.froms[0]?.table.identifier?.name;
+      if (table) {
+        this.ctx.set(queryId, table);
       }
     }
     const data = this.serializeParametersTransformer.transformNode(args.node);
     return data;
   }
 
-  private parseResult(rows: any[], tableName: string) {
-    if (this.schema?.[tableName]) {
+  private parseResult(rows: any[], table: string) {
+    if (this.schema?.[table]) {
       try {
         return Promise.resolve(
           rows.map(row =>
-            this.schema[tableName].partial().passthrough().parse(row)
+            this.schema[table].partial().passthrough().parse(row)
           )
         );
       } catch (error: any) {
         this.logger?.error(rows);
-        throw new Error(`Parse table: ${tableName} => ${error.message}`);
+        throw new Error(`Parse table: ${table} => ${error.message}`);
       }
     }
     return rows;

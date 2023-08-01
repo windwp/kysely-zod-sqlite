@@ -9,68 +9,43 @@ export const zBoolean = z.custom<boolean>().transform(value => {
 });
 
 // parse json and parse child with schema
-export function zJsonSchema<T>(schema: z.Schema<T>) {
+export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
   return z.custom<T>().transform((v, ctx): T => {
-    if (!v) return v;
-    if (typeof v === 'string') {
-      if (v === '') return {} as any;
-      try {
-        return schema.parse(JSON.parse(v));
-      } catch (e: any) {
-        ctx.addIssue({
-          code: 'custom',
-          message: e.message,
-        });
-        return z.NEVER;
-      }
+    if (!v || typeof v !== 'string') return v;
+    if (v === '') return (defaultValue ?? {}) as T;
+    try {
+      return schema.parse(JSON.parse(v));
+    } catch (e: any) {
+      ctx.addIssue({
+        code: 'custom',
+        message: e.message,
+      });
+      return z.NEVER;
     }
-    return v;
   });
 }
-
-export function zJsonSchemaArray<T>(schema: z.Schema<T[]>) {
-  return z.custom<T[]>().transform((v, ctx): T[] => {
-    if (!v) return v;
-    if (typeof v === 'string') {
-      if (v === '') return [];
-      try {
-        return schema.parse(JSON.parse(v));
-      } catch (e: any) {
-        ctx.addIssue({
-          code: 'custom',
-          message: e.message,
-        });
-        return z.NEVER;
-      }
-    }
-    return v;
-  });
-}
+// export type NotAZodObject<T> = T extends { _parse: any } ? never : T;
 /* only parse json don't care child struct*/
-export function zJsonObject<T>() {
+export function zJsonObject<T>(defaultValue: T = {} as T) {
   return z.custom<T>().transform((v, ctx): T => {
-    if (!v) return v;
-    if (typeof v === 'string') {
-      if (v === '') return {} as any;
-      try {
-        return JSON.parse(v);
-      } catch (e: any) {
-        ctx.addIssue({
-          code: 'custom',
-          message: e.message,
-        });
-        return z.NEVER;
-      }
+    if (!v || typeof v !== 'string') return v;
+    if (v === '') return (defaultValue ?? {}) as T;
+    try {
+      return JSON.parse(v);
+    } catch (e: any) {
+      ctx.addIssue({
+        code: 'custom',
+        message: e.message,
+      });
+      return z.NEVER;
     }
-    return v;
   });
 }
 
 export const zDate = z
   .custom<Date>()
   .transform((v, ctx) => {
-    if (!v) return v;
-    if (v instanceof Date) return v;
+    if (!v || v instanceof Date) return v;
     if (typeof v === 'string') {
       if ((v as string).length == 24) return parseISO(v);
 

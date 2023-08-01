@@ -43,7 +43,7 @@ export function runTest(api: TestApi) {
     // await api.runSql(sql`PRAGMA foreign_keys=off`);
     // await api.runSql(sql`DROP TABLE TestUser`);
     // await api.runSql(sql`DROP TABLE TestPost`);
-    await api.db.schema
+    await api.ky.schema
       .createTable('TestUser')
       .ifNotExists()
       .addColumn('id', 'text', cb => cb.primaryKey())
@@ -57,7 +57,7 @@ export function runTest(api: TestApi) {
         cb.defaultTo(sql`CURRENT_TIMESTAMP`)
       )
       .execute();
-    await api.db.schema
+    await api.ky.schema
       .createTable('TestPost')
       .ifNotExists()
       .addColumn('id', 'text', cb => cb.primaryKey())
@@ -110,7 +110,7 @@ export function runTest(api: TestApi) {
 
   it('should be able to do a crud on kysely', async () => {
     const testId = '123456';
-    await api.db
+    await api.ky
       .insertInto('TestUser')
       .values({
         id: testId,
@@ -126,14 +126,14 @@ export function runTest(api: TestApi) {
         updatedAt: new Date(),
       })
       .executeTakeFirst();
-    const first = await api.db
+    const first = await api.ky
       .selectFrom('TestUser')
       .where('id', '=', testId)
       .selectAll()
       .executeTakeFirst();
 
     expect(first?.data?.o.a).toBe(10);
-    const check = await api.db
+    const check = await api.ky
       .updateTable('TestUser')
       .set({ name: 'test' })
       .where('id', '=', testId)
@@ -285,7 +285,7 @@ export function runTest(api: TestApi) {
   it('batchone should working', async () => {
     {
       await api.batchOneSmt(
-        api.db
+        api.ky
           .updateTable('TestUser')
           .set({
             data: sql` json_set(data, '$.value', ?)`,
@@ -323,7 +323,7 @@ export function runTest(api: TestApi) {
       },
     }));
     await api.batchOneSmt(
-      api.db.updateTable('TestUser').set(newUsers[0]).where('name', '=', '?'),
+      api.ky.updateTable('TestUser').set(newUsers[0]).where('name', '=', '?'),
       newUsers.map(o => {
         return [...Object.values(o), o.name];
       })
@@ -332,8 +332,8 @@ export function runTest(api: TestApi) {
   it('batchAll should work ', async () => {
     {
       const result = await api.batchAllSmt([
-        api.db.selectFrom('TestUser').selectAll(),
-        api.db.insertInto('TestPost').values({
+        api.ky.selectFrom('TestUser').selectAll(),
+        api.ky.insertInto('TestPost').values({
           id: uid(),
           name: 'post',
           data: '',
@@ -351,7 +351,7 @@ export function runTest(api: TestApi) {
     {
       const check = await api.bulk({
         user: api.$batchOneSmt(
-          api.db
+          api.ky
             .updateTable('TestUser')
             .set({
               data: sql` json_set(data, '$.value', ?)`,
@@ -378,7 +378,7 @@ export function runTest(api: TestApi) {
   });
 
   it('should compare date', async () => {
-    const check = await api.db
+    const check = await api.ky
       .selectFrom('TestUser')
       .selectAll()
       .where('updatedAt', '>=', addDays(new Date(), 3))
@@ -509,7 +509,7 @@ export function runTest(api: TestApi) {
   });
 
   it('innerJoin is not automatic parse', async () => {
-    const data = await api.db
+    const data = await api.ky
       .selectFrom('TestPost')
       .limit(1)
       .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
