@@ -73,7 +73,9 @@ export type QueryWhere<V> = {
 };
 
 export type Query<V> = {
-  select?: Readonly<Array<keyof V>>;
+  select?: Readonly<{
+    [k in keyof V]?: boolean;
+  }>;
   where?: QueryWhere<V>;
   skip?: number;
   take?: number;
@@ -82,12 +84,16 @@ export type Query<V> = {
   };
 };
 
-export type QueryRelations<V, R> = Query<V> & {
+export type QueryRelations<V, Relation> = Query<V> & {
   include?: {
-    [k in keyof R]?:
+    [k in keyof Relation]?:
       | boolean
       | {
-          select: Array<keyof V>;
+          select: k extends keyof V
+            ? {
+                [field in keyof NonNullable<V[k]>]?: boolean;
+              }
+            : never;
         };
   };
 };

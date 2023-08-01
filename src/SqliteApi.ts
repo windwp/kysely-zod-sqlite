@@ -245,8 +245,14 @@ function mappingQueryOptions<V, R>(
   autoSelecAll = true
 ) {
   if (autoSelecAll) {
-    if (opts.select) query = query.select(opts.select as any);
-    else query = query.selectAll();
+    if (opts.select) {
+      const columns = Object.keys(opts.select).filter(k => {
+        return opts.select?.[k as keyof V];
+      });
+      query = query.select(columns);
+    } else {
+      query = query.selectAll();
+    }
   }
   if (opts.where) {
     for (const key in opts.where) {
@@ -285,7 +291,7 @@ function mappingRelations<V, R>(
       const columns =
         typeof select === 'boolean'
           ? Object.keys(relation.schema?.shape)
-          : select?.select;
+          : Object.keys((select as any)?.select);
       if (!columns || columns.length == 0) {
         throw new Error('input schema for table or define a column to select ');
       }
@@ -295,11 +301,7 @@ function mappingRelations<V, R>(
           eb
             .selectFrom(relation.table)
             .select(columns)
-            .whereRef(
-              `${table}.${relation.ref}`,
-              '=',
-              relation.refTarget as any
-            )
+            .whereRef(`${table}.${relation.ref}`, '=', relation.refTarget)
         ).as(key),
       ]);
     }
@@ -319,11 +321,11 @@ export class PTable<
 > {
   constructor(private readonly ky: Kysely<T>, public config: VTable) {}
 
-  selectById(id: string, select?: Readonly<Array<keyof V>>) {
+  selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
     return this.$selectById(id, select).executeTakeFirst() as Promise<V>;
   }
 
-  $selectById(id: string, select?: Readonly<Array<keyof V>>) {
+  $selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
     return this.$selectFirst({
       where: { id } as any,
       select,
@@ -407,7 +409,7 @@ export class PTable<
     }
     let selectQuery = this.ky.selectFrom(this.config.table);
     opts.take = 1;
-    opts.select = ['id'] as any;
+    opts.select = { id: true };
     selectQuery = mappingQueryOptions(selectQuery, opts);
     query = query.where('id', 'in', selectQuery);
     return query.set(opts.data as any);

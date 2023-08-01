@@ -149,7 +149,10 @@ export function runTest(api: TestApi) {
             like: 'user%',
           },
         },
-        select: ['name', 'id'],
+        select: {
+          id: true,
+          name: true,
+        },
         skip: 2,
         take: 4,
       });
@@ -215,7 +218,7 @@ export function runTest(api: TestApi) {
           like: 'user%',
         },
       },
-      select: ['name', 'id'],
+      select: { id: true, name: true },
       skip: 2,
       take: 4,
       orderBy: {
@@ -392,7 +395,7 @@ export function runTest(api: TestApi) {
         name: undefined,
         id: userArr[0].id,
       },
-      select: ['id', 'name'],
+      select: { id: true, name: true },
     });
     expect(first).toBeTruthy();
     expect(first?.name).toBeTruthy();
@@ -457,7 +460,10 @@ export function runTest(api: TestApi) {
     const user = await api.TestUser.selectById(userArr[0].id);
     user.email = 'checkok@gmail.com';
     await api.TestUser.updateById(user.id, user);
-    const select = ['email', 'id'] as const;
+    const select = {
+      id: true,
+      email: true,
+    };
     const check = await api.TestUser.selectById(userArr[0].id, select);
     expect(check.email).toBe('checkok@gmail.com');
   });
@@ -517,5 +523,20 @@ export function runTest(api: TestApi) {
       .execute();
     const check = api.parseMany<UserTable>(data, 'TestUser');
     expect(check[0].data.o).toBeTruthy();
+  });
+  it('should include', async () => {
+    const data = await api.TestPost.selectFirst({
+      include: {
+        user: {
+          select: {
+            email: true,
+            id: true,
+          },
+        },
+      },
+    });
+    expect(data?.user?.id).toBeTruthy();
+    expect(data?.user?.email).toBeTruthy();
+    expect(data?.user?.data).toBeFalsy();
   });
 }

@@ -24,12 +24,30 @@ export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
     }
   });
 }
-// export type NotAZodObject<T> = T extends { _parse: any } ? never : T;
-/* only parse json don't care child struct*/
-export function zJsonObject<T>(defaultValue: T = {} as T) {
+export function zJsonObject<T>(
+  defaultValue?: T extends { parse: any } ? never : T
+) {
   return z.custom<T>().transform((v, ctx): T => {
     if (!v || typeof v !== 'string') return v;
     if (v === '') return (defaultValue ?? {}) as T;
+    try {
+      return JSON.parse(v);
+    } catch (e: any) {
+      ctx.addIssue({
+        code: 'custom',
+        message: e.message,
+      });
+      return z.NEVER;
+    }
+  });
+}
+
+export function zJsonArray<T>(
+  defaultValue?: T[] extends { parse: any }[] ? never : T[]
+) {
+  return z.custom<T[]>().transform((v, ctx): T[] => {
+    if (!v || typeof v !== 'string') return v;
+    if (v === '') return defaultValue ?? [];
     try {
       return JSON.parse(v);
     } catch (e: any) {
