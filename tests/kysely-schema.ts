@@ -1,11 +1,5 @@
 import { TypeOf, z } from 'zod';
-import {
-  zBoolean,
-  zDate,
-  zJsonArray,
-  zJsonObject,
-  zJsonSchema,
-} from '../src/helpers/zod';
+import { zBoolean, zDate, zJsonArray, zJsonObject } from '../src/helpers/zod';
 
 const dataSchema = z.object({
   value: z.string(),

@@ -231,7 +231,7 @@ export class SqliteApi<T> {
     return data.map(o => (this.schema as any).shape[table]?.parse(o)) as X[];
   }
 
-  table<V>() {
+  table<V extends { id: string }>() {
     return {
       create: <R extends TableDefinition<T>>(innerTable: R) =>
         new PTable<V, R>(this.ky, innerTable),
@@ -315,7 +315,7 @@ type VRelations<Table> = Table extends { relations?: infer X } ? X : never;
  * Api is inspire by Prisma
  */
 export class PTable<
-  V,
+  V extends { id: string },
   VTable extends TableDefinition<T>,
   T extends { [K in keyof T]: { id: string } } = any
 > {
@@ -402,6 +402,7 @@ export class PTable<
   }> {
     return await this.$updateOne(opts).executeTakeFirst();
   }
+
   $updateOne(opts: Query<V> & { data: Partial<V> }) {
     let query = this.ky.updateTable(this.config.table);
     if (this.config.timeStamp) {
@@ -438,12 +439,12 @@ export class PTable<
    * it use for a non unique key if a key is unique use InsertConflict
    */
   async insertOrUpdate(opts: {
-    data: Partial<V> & { id?: string };
+    data: Partial<V> & { id?: V['id'] };
     where?: QueryWhere<V>;
   }): Promise<Partial<V> & { id: string }> {
     if (opts.data.id) {
       await this.updateOne({
-        where: { id: opts.data.id, ...opts.where } as any,
+        where: { id: opts.data.id, ...opts.where } as QueryWhere<V>,
         data: opts.data,
       });
       return opts.data as any;

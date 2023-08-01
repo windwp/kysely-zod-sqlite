@@ -73,9 +73,9 @@ export type QueryWhere<V> = {
 };
 
 export type Query<V> = {
-  select?: Readonly<{
+  select?: {
     [k in keyof V]?: boolean;
-  }>;
+  };
   where?: QueryWhere<V>;
   skip?: number;
   take?: number;
@@ -101,10 +101,6 @@ export type QueryRelations<V, Relation> = Query<V> & {
 export type BatchResult = {
   rows: { key: string; results: any[]; table: string }[];
 };
-
-export interface Apdater {
-  fetch(body: DataBody, _dbConfig: DbConfig): Promise<any>;
-}
 
 export type ExtractResultFromQuery<T> = T extends SelectQueryBuilder<
   any,
