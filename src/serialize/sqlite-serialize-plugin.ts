@@ -46,10 +46,11 @@ export class SqliteSerializePlugin implements KyselyPlugin {
       try {
         return Promise.resolve(
           rows.map(row =>
-            this.schema[table].partial().passthrough().parse(row)
+            row ? this.schema[table].partial().passthrough().parse(row) : row
           )
         );
       } catch (error: any) {
+        this.logger?.error('Rows Data:');
         this.logger?.error(rows);
         throw new Error(`Parse table: ${table} => ${error.message}`);
       }

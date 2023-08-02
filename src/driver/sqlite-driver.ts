@@ -145,7 +145,11 @@ class BetterConnection implements DatabaseConnection {
 
     if (!action) {
       action =
-        compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
+        (compiledQuery.query as any)?.limit?.limit.value == 1
+          ? 'selectFirst'
+          : compiledQuery.query.kind === 'SelectQueryNode'
+          ? 'selectAll'
+          : 'run';
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

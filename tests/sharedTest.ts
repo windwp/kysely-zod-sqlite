@@ -468,8 +468,7 @@ export function runTest(api: TestApi) {
     expect(check.email).toBe('checkok@gmail.com');
   });
 
-  it('upsert should workgin', async () => {
-    api.config.logger?.setLevel('debug');
+  it.only('upsert should working', async () => {
     for (let index = 0; index < 5; index++) {
       await api.TestPost.upsert({
         where: {
