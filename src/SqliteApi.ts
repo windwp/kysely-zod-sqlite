@@ -23,10 +23,11 @@ import type {
   ExtractResultFromQuery,
 } from './types';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
+import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
+
 import { z } from 'zod';
 import { uid } from './helpers/uid';
-import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
 
 export class SqliteApi<T> {
   readonly ky: Kysely<T>;
@@ -435,10 +436,9 @@ export class PTable<
   }
 
   /**
-   * if data already have id then It only do update
-   * it use for a non unique key if a key is unique use InsertConflict
+   * It use for a non unique key if a key is unique use InsertConflict
    */
-  async insertOrUpdate(opts: {
+  async upsert(opts: {
     data: Partial<V> & { id?: V['id'] };
     where?: QueryWhere<V>;
   }): Promise<Partial<V> & { id: string }> {

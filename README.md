@@ -1,13 +1,13 @@
 # feature 
   It has an easy to use API like Prisma and a powerful query with Kysely.
-  It only support D1 and sqlite.
+
 
 - [x] api similar to primsa
 - [x] automatic parse result by zod (for json string on sqlite) 
 - [x] support relation like prisma
 - [ ] auto generate primsa to zod + kysely
 
-
+*Warning* It only support D1 and sqlite.
 ## Thank
 [kysely](https://github.com/kysely-org/kysely)
 [zod](https://github.com/colinhacks/zod)

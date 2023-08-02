@@ -468,16 +468,16 @@ export function runTest(api: TestApi) {
     expect(check.email).toBe('checkok@gmail.com');
   });
 
-  it('insert or update', async () => {
+  it('upsert should workgin', async () => {
     api.config.logger?.setLevel('debug');
     for (let index = 0; index < 5; index++) {
-      await api.TestPost.insertOrUpdate({
+      await api.TestPost.upsert({
         where: {
-          data: 'insertOrUpdate',
+          data: 'upsert',
           userId: userArr[0].id,
         },
         data: {
-          data: 'insertOrUpdate',
+          data: 'upsert',
           userId: userArr[0].id,
           name: 'check_update@gmail.com',
         },
@@ -485,7 +485,7 @@ export function runTest(api: TestApi) {
     }
     const check = await api.TestPost.selectMany({
       where: {
-        data: 'insertOrUpdate',
+        data: 'upsert',
       },
     });
     expect(check[0].name).toBe('check_update@gmail.com');
@@ -494,37 +494,37 @@ export function runTest(api: TestApi) {
   });
 
   it('insert or update with empty where', async () => {
-    api.config.logger?.setLevel('debug');
-    const v = await api.TestPost.insertOrUpdate({
+    const v = await api.TestPost.upsert({
       data: {
-        data: 'insertOrUpdate',
+        data: 'upsert ',
         userId: userArr[0].id,
-        name: 'update@gmail.com',
+        name: 'update-upsert@gmail.com',
       },
     });
     v.name = 'insertOrUpdate@gmail.com';
-    await api.TestPost.insertOrUpdate({
+    await api.TestPost.upsert({
       data: v,
     });
-    const item = await api.TestPost.selectFirst({
+    const item = await api.TestPost.selectMany({
       where: {
         name: v.name,
       },
     });
-    expect(item?.id).toBe(v.id);
+    expect(item?.length).toBe(1);
   });
 
-  it('innerJoin is not automatic parse', async () => {
+  it('innerJoin will not parse', async () => {
     const data = await api.ky
       .selectFrom('TestPost')
       .limit(1)
       .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
       .selectAll()
       .execute();
+    expect(typeof data[0].data === 'string').toBeTruthy();
     const check = api.parseMany<UserTable>(data, 'TestUser');
     expect(check[0].data.o).toBeTruthy();
   });
-  it('should include', async () => {
+  it('include with select', async () => {
     const data = await api.TestPost.selectFirst({
       include: {
         user: {
