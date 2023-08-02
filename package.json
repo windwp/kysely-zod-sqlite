@@ -1,6 +1,6 @@
 {
   "name": "kysely-zod-sqlite",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "litte orm with kysely + zod for d1 sqlite",
   "main": "./dist/index.js",
   "type": "module",

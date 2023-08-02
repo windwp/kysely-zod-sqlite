@@ -96,11 +96,8 @@ class FetchConnection implements DatabaseConnection {
         } as any;
       }
     } catch (error: any) {
-      this.#config.logger?.error(error.message);
+      this.#config.logger?.error(`[FetchDriver] Error: ${error.message}`);
     }
-
-    this.#config.logger?.error('[FetchDriver] Error');
-    this.#config.logger?.error(body);
     return {
       insertId: undefined,
       rows: [],
