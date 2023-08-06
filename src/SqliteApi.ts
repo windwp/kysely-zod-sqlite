@@ -201,7 +201,7 @@ export class SqliteApi<T> {
       data: data.rows,
       getOne: <X = any>(key: V, table?: keyof T): X | undefined => {
         const v = data.rows.find(o => o.key === key);
-        if (!v) throw new Error(`wrong key ${key}`);
+        if (!v) return undefined;
         const name =
           table ?? body.operations.find(o => o.key === key)?.table ?? '';
         if (Array.isArray(v.results)) {
@@ -211,7 +211,7 @@ export class SqliteApi<T> {
       },
       getMany: <X = any>(key: V, table?: string): X[] => {
         const v = data.rows.find(o => o.key === key);
-        if (!v) throw new Error(`wrong key ${key}`);
+        if (!v) return [];
         const name =
           table ?? body.operations.find(o => o.key === key)?.table ?? '';
         return this.parseMany(v.results, name as any);

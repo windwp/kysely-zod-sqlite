@@ -377,6 +377,8 @@ export function runTest(api: TestApi) {
       expect(topUser.length).toBe(10);
       expect(topUser[0].posts).toBeTruthy();
       expect(topUser[0].posts?.[0]?.id).toBeTruthy();
+      const value = check.getOne('check');
+      expect(value).toBe(undefined);
     }
   });
 
