@@ -168,33 +168,32 @@ export class SqliteApi<T> {
         },
     opts?: ApiOptions & { isTransaction: boolean }
   ) {
-    const ops: Array<OneActionBody & { key: string }> = Object.keys(operations)
-      .map((k: any) => {
-        const value = operations[k as V];
-        if (!value) return undefined;
-        if ((value as any).compile) {
-          const query: CompiledQuery<T> = (value as any).compile(this.ky);
-          const table = (query.query as any).from?.froms[0]?.table.identifier
-            ?.name;
-          return {
-            key: k,
-            sql: query.sql,
-            table: table,
-            action:
-              query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-            parameters: query.parameters,
-          };
-        }
+    const ops: Array<OneActionBody & { key: string }> = Object.keys(
+      operations
+    ).map((k: any) => {
+      const value = operations[k as V];
+      if (!value) return { key: k };
+      if ((value as any).compile) {
+        const query: CompiledQuery<T> = (value as any).compile(this.ky);
+        const table = (query.query as any).from?.froms[0]?.table.identifier
+          ?.name;
         return {
           key: k,
-          ...value,
-        } as any;
-      })
-      .filter(o => o);
+          sql: query.sql,
+          table: table,
+          action: query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
+          parameters: query.parameters,
+        };
+      }
+      return {
+        key: k,
+        ...value,
+      } as any;
+    });
     const body: DataBody = {
       action: 'bulks',
       isTransaction: opts?.isTransaction ?? false,
-      operations: ops,
+      operations: ops.filter(o => o.action),
     };
     const data: BatchResult = await this.execQuery(body, opts);
 
