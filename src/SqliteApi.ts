@@ -1,38 +1,37 @@
 import {
-  Kysely,
-  SelectQueryBuilder,
+  CompiledQuery,
+  Driver,
   InsertQueryBuilder,
+  Kysely,
+  RawBuilder,
+  SelectQueryBuilder,
   SqliteAdapter,
   SqliteIntrospector,
   SqliteQueryCompiler,
-  Driver,
-  CompiledQuery,
-  RawBuilder,
 } from 'kysely';
-import type {
-  DbConfig,
-  DataBody,
-  ApiOptions,
-  Query,
-  QueryWhere,
-  QueryRelations,
-  TableRelation,
-  BatchResult,
-  OneActionBody,
-  TableDefinition,
-  ExtractResultFromQuery,
-} from './types';
+import { z } from 'zod';
+import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
+import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
-import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
-
-import { z } from 'zod';
-import { uid } from './helpers/uid';
+import type {
+  ApiOptions,
+  BatchResult,
+  DataBody,
+  DbConfig,
+  ExtractResultFromQuery,
+  OneActionBody,
+  Query,
+  QueryRelations,
+  QueryWhere,
+  TableDefinition,
+  TableRelation,
+} from './types';
 
 export class SqliteApi<T> {
   readonly ky: Kysely<T>;
   readonly config: DbConfig;
-  readonly schema: z.Schema<T>;
+  readonly schema?: z.ZodObject<any, any, any, T>;
 
   constructor({
     config,
@@ -40,11 +39,11 @@ export class SqliteApi<T> {
     driver,
   }: {
     config: DbConfig;
-    schema: any;
     driver: Driver;
+    schema?: z.ZodObject<any, any, any, T>;
   }) {
     this.config = config;
-    this.schema = schema;
+    if (schema) this.schema = schema;
     this.ky = new Kysely<T>({
       dialect: {
         createAdapter: () => new SqliteAdapter(),
@@ -54,7 +53,7 @@ export class SqliteApi<T> {
       },
       plugins: [
         new SqliteSerializePlugin({
-          schema: schema.shape,
+          schema: schema?.shape,
           logger: config.logger,
         }),
       ],
@@ -175,7 +174,6 @@ export class SqliteApi<T> {
         if (!value) return undefined;
         if ((value as any).compile) {
           const query: CompiledQuery<T> = (value as any).compile(this.ky);
-
           const table = (query.query as any).from?.froms[0]?.table.identifier
             ?.name;
           return {
@@ -223,13 +221,13 @@ export class SqliteApi<T> {
   }
 
   parseOne<X = any>(data: any, table: keyof T): X {
-    if (!data || !(this.schema as any).shape[table]) return data;
-    return (this.schema as any).shape[table]?.parse(data) as X;
+    if (!data || !this.schema?.shape[table]) return data;
+    return this.schema?.shape[table]?.parse(data) as X;
   }
 
   parseMany<X = any>(data: any[], table: keyof T): X[] {
-    if (!(this.schema as any).shape[table]) return data;
-    return data.map(o => (this.schema as any).shape[table]?.parse(o)) as X[];
+    if (!this.schema?.shape[table]) return data;
+    return data.map(o => this.schema?.shape[table]?.parse(o)) as X[];
   }
 
   table<V extends { id: string }>() {
@@ -328,7 +326,7 @@ export class PTable<
 
   $selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
     return this.$selectFirst({
-      where: { id } as any,
+      where: { id } as QueryWhere<V>,
       select,
     });
   }
