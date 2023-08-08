@@ -219,7 +219,7 @@ export class SqliteApi<T extends { [key: string]: { id: string } }> {
 
   parseOne<X = any>(data: any, table: keyof T): X {
     if (!data || !this.schema.shape[table]) return data;
-    return this.schema?.shape[table]?.parse(data) as X;
+    return this.schema.shape[table]?.parse(data) as X;
   }
 
   parseMany<X = any>(data: any[], table: keyof T): X[] {
@@ -318,12 +318,12 @@ export class PTable<
   constructor(
     private readonly ky: Kysely<T>,
     public readonly table: keyof T & string,
-    public readonly schema: ZodObject<any, any, any, T>
+    public readonly schema?: ZodObject<any, any, any, T>
   ) {
     this.schema = schema;
-    this.timeStamp = !!this.schema.shape['updatedAt'];
+    this.timeStamp = !!this.schema?.shape['updatedAt'];
     this.relations = {};
-    for (const [key, value] of Object.entries(this.schema.shape)) {
+    for (const [key, value] of Object.entries(this.schema?.shape)) {
       if ((value as ZodAny).description) {
         this.relations[key] = ((value as ZodAny)
           .description as unknown) as TableRelation;
