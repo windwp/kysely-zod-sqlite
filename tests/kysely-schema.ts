@@ -1,5 +1,11 @@
 import { TypeOf, z } from 'zod';
-import { zBoolean, zDate, zJsonArray, zJsonObject } from '../src/helpers/zod';
+import {
+  zBoolean,
+  zDate,
+  zJsonObject,
+  zRelationMany,
+  zRelationOne,
+} from '../src/helpers/zod';
 
 const dataSchema = z.object({
   value: z.string(),
@@ -30,40 +36,23 @@ export const postSchema = z.object({
 });
 
 export const postRelationSchema = postSchema.extend({
-  user: zJsonObject<TypeOf<typeof userSchema>>().optional(),
+  user: zRelationOne({
+    schema: userSchema,
+    ref: 'userId',
+    refTarget: 'id',
+    table: 'TestUser',
+  }),
 });
 
 export const userRelationSchema = userSchema.extend({
-  posts: zJsonArray<TypeOf<typeof postSchema>>().optional(),
+  posts: zRelationMany({
+    schema: postSchema,
+    refTarget: 'userId',
+    ref: 'id',
+    table: 'TestPost',
+  }),
 });
 
-export const userTable = {
-  table: 'TestUser',
-  timeStamp: true,
-  relations: {
-    posts: {
-      schema: postSchema,
-      refTarget: 'userId',
-      ref: 'id',
-      table: 'TestPost',
-      type: 'many',
-    },
-  },
-} as const;
-
-export const postTable = {
-  table: 'TestPost',
-  timeStamp: true,
-  relations: {
-    user: {
-      schema: userSchema,
-      ref: 'userId',
-      refTarget: 'id',
-      table: 'TestUser',
-      type: 'one',
-    },
-  },
-} as const;
 export type PostTable = TypeOf<typeof postRelationSchema>;
 
 export type UserTable = TypeOf<typeof userRelationSchema>;

@@ -48,7 +48,7 @@ export type TableRelation = {
   refTarget: string;
   select?: string[];
   schema?: ZodObject<any, any>;
-  type: 'many' | 'one';
+  type?: 'many' | 'one';
 };
 
 export type TableDefinition<T> = {
@@ -84,9 +84,15 @@ export type Query<V> = {
   };
 };
 
-export type QueryRelations<V, Relation> = Query<V> & {
+export type ExtractFieldsWithRelations<T> = {
+  [K in keyof T as NonNullable<T[K]> extends { __relations: any }
+    ? K
+    : never]: T[K];
+};
+
+export type QueryRelations<V> = Query<V> & {
   include?: {
-    [k in keyof Relation]?:
+    [k in keyof ExtractFieldsWithRelations<V>]?:
       | boolean
       | {
           select: k extends keyof V

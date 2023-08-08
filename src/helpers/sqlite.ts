@@ -40,4 +40,3 @@ export function jsonObjectFrom<O>(
     getJsonObjectArgs(expr.toOperationNode(), 'obj')
   )}) from ${expr} as obj)`;
 }
-

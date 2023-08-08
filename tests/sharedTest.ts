@@ -285,9 +285,9 @@ export function runTest(api: TestApi) {
     expect(result?.posts?.[0].userId).toBe(userArr[0].id);
   });
 
-  it('batchone should working', async () => {
+  it.only('batchone should working', async () => {
     {
-      await api.batchOneSmt(
+      const data = await api.batchOneSmt(
         api.ky
           .updateTable('TestUser')
           .set({
@@ -299,6 +299,8 @@ export function runTest(api: TestApi) {
           ['bbb', 'user1'],
         ]
       );
+
+      console.log('data', data);
 
       const check0 = await api.TestUser.selectFirst({
         where: {
@@ -527,6 +529,10 @@ export function runTest(api: TestApi) {
   });
   it('include with select', async () => {
     const data = await api.TestPost.selectFirst({
+      select: {
+        userId: true,
+        name: true,
+      },
       include: {
         user: {
           select: {

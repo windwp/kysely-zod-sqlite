@@ -9,7 +9,7 @@ import loglevel from 'loglevel';
 import { DbConfig } from '../src/types';
 import { dbSchema } from './kysely-schema';
 
-loglevel.setLevel((process.env.DEBUG_LEVEL || loglevel.levels.DEBUG) as any);
+loglevel.setLevel(loglevel.levels.DEBUG);
 const config: DbConfig = {
   apiKey: '',
   apiUrl: '',

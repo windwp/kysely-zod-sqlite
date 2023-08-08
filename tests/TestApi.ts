@@ -1,17 +1,11 @@
-import { PTable, SqliteApi } from '../src/SqliteApi';
-import {
-  Database,
-  PostTable,
-  UserTable,
-  postTable,
-  userTable,
-} from './kysely-schema';
+import { SqliteApi } from '../src/SqliteApi';
+import { Database } from './kysely-schema';
 
 export class TestApi extends SqliteApi<Database> {
   get TestUser() {
-    return this.table<UserTable>().create(userTable);
+    return this.table('TestUser');
   }
   get TestPost() {
-    return this.table<PostTable>().create(postTable);
+    return this.table('TestPost');
   }
 }

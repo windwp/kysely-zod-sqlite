@@ -10,7 +10,7 @@ import { DbConfig } from '../src/types';
 import { dbSchema } from './kysely-schema';
 import Database from 'better-sqlite3';
 
-loglevel.setLevel((process.env.DEBUG_LEVEL || loglevel.levels.DEBUG) as any);
+loglevel.setLevel(loglevel.levels.DEBUG);
 
 const config: DbConfig = {
   apiKey: 'test',
