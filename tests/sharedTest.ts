@@ -287,7 +287,7 @@ export function runTest(api: TestApi) {
 
   it('batchone should working', async () => {
     {
-      const data = await api.batchOneSmt(
+      await api.batchOneSmt(
         api.ky
           .updateTable('TestUser')
           .set({
@@ -299,9 +299,6 @@ export function runTest(api: TestApi) {
           ['bbb', 'user1'],
         ]
       );
-
-      console.log('data', data);
-
       const check0 = await api.TestUser.selectFirst({
         where: {
           name: 'user0',
