@@ -285,7 +285,7 @@ export function runTest(api: TestApi) {
     expect(result?.posts?.[0].userId).toBe(userArr[0].id);
   });
 
-  it.only('batchone should working', async () => {
+  it('batchone should working', async () => {
     {
       const data = await api.batchOneSmt(
         api.ky
