@@ -97,7 +97,7 @@ class FetchConnection implements DatabaseConnection {
       }
     } catch (error: any) {
       this.#config.logger?.error(
-        `[FetchDriver] ${this.#config.apiKey} Error: ${error.message}`
+        `[FetchDriver] ${this.#config.apiUrl} Error: ${error.message}`
       );
     }
     return {

@@ -172,7 +172,6 @@ class BetterConnection implements DatabaseConnection {
           ? BigInt(results.results?.lastInsertRowId)
           : undefined,
         rows: results.results,
-        batch: (results as any).batch,
         numAffectedRows: results.results?.changes ?? undefined,
       } as any);
     } catch (error: any) {

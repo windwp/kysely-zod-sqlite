@@ -101,7 +101,7 @@ async function D1Handler(
       };
       for (const op of body.operations) {
         const data = await D1Handler(d1, op);
-        result.results.push({
+        result.results?.push({
           key: op.key,
           results: data.results,
         });
@@ -155,7 +155,6 @@ class D1Connection implements DatabaseConnection {
             ? undefined
             : BigInt(results.meta.last_row_id),
         rows: (results.results as T[]) || [],
-        batch: (results as any).batch,
         numAffectedRows,
       } as any;
     } catch (error: any) {
