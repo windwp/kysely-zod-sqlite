@@ -162,8 +162,8 @@ export function runTest(api: TestApi) {
     {
       const check = await api.TestUser.selectById(userArr[0].id);
       expect(check?.id).toBe(userArr[0].id);
-      expect(check.createdAt instanceof Date).toBeTruthy();
-      expect(check.updatedAt instanceof Date).toBeTruthy();
+      expect(check?.createdAt instanceof Date).toBeTruthy();
+      expect(check?.updatedAt instanceof Date).toBeTruthy();
     }
     {
       const check = await api.TestUser.insertOne({
@@ -465,14 +465,14 @@ export function runTest(api: TestApi) {
   });
   it('updateById', async () => {
     const user = await api.TestUser.selectById(userArr[0].id);
-    user.email = 'checkok@gmail.com';
-    await api.TestUser.updateById(user.id, user);
+    user!.email = 'checkok@gmail.com';
+    await api.TestUser.updateById(user!.id, user!);
     const select = {
       id: true,
       email: true,
     };
     const check = await api.TestUser.selectById(userArr[0].id, select);
-    expect(check.email).toBe('checkok@gmail.com');
+    expect(check?.email).toBe('checkok@gmail.com');
   });
 
   it('upsert should working', async () => {
