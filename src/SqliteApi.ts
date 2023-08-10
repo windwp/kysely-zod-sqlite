@@ -82,7 +82,7 @@ export class SqliteApi<T extends { [key: string]: { id: string } }> {
    * only working cloudflare D1 and sqlite
    * use this api to execute one sql query with multiple parameters
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
-   * parameters -order- is not automatic like what kysely does
+   * batchParams -order- is not automatic like what kysely does
    */
   async batchOneSmt<
     V extends SelectQueryBuilder<T, any, any> | InsertQueryBuilder<T, any, any>
@@ -105,9 +105,11 @@ export class SqliteApi<T extends { [key: string]: { id: string } }> {
         ? sqlQuery.compile(this.ky)
         : sqlQuery.compile();
     batchParams.forEach(o => {
-      o.forEach((v, index) => {
-        o[index] = defaultSerializer(v);
-      });
+      if (Array.isArray(o)) {
+        o.forEach((v, index) => {
+          o[index] = defaultSerializer(v);
+        });
+      }
     });
     return {
       action: 'batchOneSmt',
@@ -323,10 +325,12 @@ export class PTable<
     this.schema = schema;
     this.timeStamp = !!this.schema?.shape['updatedAt'];
     this.relations = {};
-    for (const [key, value] of Object.entries(this.schema?.shape)) {
-      if ((value as ZodAny).description) {
-        this.relations[key] = ((value as ZodAny)
-          .description as unknown) as TableRelation;
+    if (this.schema?.shape) {
+      for (const [key, value] of Object.entries(this.schema.shape)) {
+        if ((value as ZodAny).description) {
+          this.relations[key] = ((value as ZodAny)
+            .description as unknown) as TableRelation;
+        }
       }
     }
   }
