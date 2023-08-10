@@ -221,12 +221,12 @@ export class SqliteApi<T extends { [key: string]: { id: string } }> {
 
   parseOne<X = any>(data: any, table: keyof T): X {
     if (!data || !this.schema.shape[table]) return data;
-    return this.schema.shape[table]?.parse(data) as X;
+    return this.schema.shape[table]?.partial().parse(data) as X;
   }
 
   parseMany<X = any>(data: any[], table: keyof T): X[] {
     if (!this.schema.shape[table]) return data;
-    return data.map(o => this.schema?.shape[table]?.parse(o)) as X[];
+    return data.map(o => this.schema?.shape[table]?.partial().parse(o)) as X[];
   }
 
   table<K extends keyof T & string>(tableName: K) {

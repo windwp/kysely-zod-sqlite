@@ -369,13 +369,19 @@ export function runTest(api: TestApi) {
           include: {
             posts: true,
           },
+          select: {
+            id: true,
+          },
         }),
         check: undefined,
       });
       const topUser = check.getMany<UserTable>('topUser');
       expect(topUser.length).toBe(10);
-      expect(topUser[0].posts).toBeTruthy();
-      expect(topUser[0].posts?.[0]?.id).toBeTruthy();
+      const user = topUser.find(u => u.id == userArr[0].id);
+      expect(user?.id).toBeTruthy();
+      expect(user?.data).toBeFalsy();
+      expect(user?.posts).toBeTruthy();
+      expect(user?.posts?.[0]?.id).toBeTruthy();
       const value = check.getOne('check');
       expect(value).toBe(undefined);
     }
