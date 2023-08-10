@@ -336,7 +336,9 @@ export class PTable<
   }
 
   selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
-    return this.$selectById(id, select).executeTakeFirst() as Promise<V>;
+    return this.$selectById(id, select).executeTakeFirst() as Promise<
+      V | undefined
+    >;
   }
 
   $selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
