@@ -9,7 +9,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import { ZodAny, ZodObject, z } from 'zod';
+import { ZodAny, ZodObject, ZodRawShape, z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
@@ -199,34 +199,58 @@ export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
 
     return {
       data: data.rows,
-      getOne: <X = any>(key: V, table?: keyof T): X | undefined => {
+      getOne: <X = any>(
+        key: V,
+        table?: keyof T,
+        extend?: ZodObject<any, any>
+      ): X | undefined => {
         const v = data.rows.find(o => o.key === key);
         if (!v) return undefined;
         const name =
           table ?? body.operations.find(o => o.key === key)?.table ?? '';
         if (Array.isArray(v.results)) {
-          return this.parseMany(v.results, name as any)?.[0];
+          return this.parseMany(v.results, name as any, extend)?.[0];
         }
-        return this.parseOne(v.results, name as any);
+        return this.parseOne(v.results, name as any, extend);
       },
-      getMany: <X = any>(key: V, table?: string): X[] => {
+      getMany: <X = any>(
+        key: V,
+        table?: string,
+        extend?: ZodObject<any, any>
+      ): X[] => {
         const v = data.rows.find(o => o.key === key);
         if (!v) return [];
         const name =
           table ?? body.operations.find(o => o.key === key)?.table ?? '';
-        return this.parseMany(v.results, name as any);
+        return this.parseMany(v.results, name as any, extend);
       },
     };
   }
 
-  parseOne<X = any>(data: any, table: keyof T): X {
-    if (!data || !this.schema.shape[table]) return data;
+  parseOne<X = any>(
+    data: any,
+    table: keyof T,
+    extend?: ZodObject<any, any>
+  ): X {
+    let shape = this.schema?.shape[table]?.partial();
+    if (!shape || !data) return data;
+    if (extend) {
+      shape = shape.extend(extend);
+    }
     return this.schema.shape[table]?.partial().parse(data) as X;
   }
 
-  parseMany<X = any>(data: any[], table: keyof T): X[] {
-    if (!this.schema.shape[table]) return data;
-    return data.map(o => this.schema?.shape[table]?.partial().parse(o)) as X[];
+  parseMany<X = any>(
+    data: any[],
+    table: keyof T,
+    extend?: ZodObject<any, any>
+  ): X[] {
+    let shape = this.schema?.shape[table]?.partial();
+    if (!shape) return data;
+    if (extend) {
+      shape = shape.extend(extend).shape;
+    }
+    return data.map(o => shape.parse(o)) as X[];
   }
 
   table<K extends keyof T & string>(

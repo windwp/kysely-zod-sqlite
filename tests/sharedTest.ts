@@ -3,6 +3,7 @@ import { TestApi } from './TestApi';
 import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
+import { z } from 'zod';
 import { uid } from '../src';
 
 async function textFixture(api: TestApi) {
@@ -534,10 +535,26 @@ export function runTest(api: TestApi) {
       .limit(1)
       .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
       .selectAll()
+      // dynamic add any field
+      .select(sql.raw('10 as dynamic') as any)
       .execute();
     expect(typeof data[0].data === 'string').toBeTruthy();
-    const check = api.parseMany<UserTable>(data, 'TestUser');
-    expect(check[0].data.o).toBeTruthy();
+    {
+      const check = api.parseMany<UserTable>(data, 'TestUser');
+      expect(check[0].data.o).toBeTruthy();
+    }
+
+    {
+      const check = api.parseMany<UserTable & { dynamic: number }>(
+        data,
+        'TestUser',
+        //  then parse it with extend
+        z.object({
+          dynamic: z.number(),
+        })
+      );
+      expect(check[0].dynamic).toBe(10);
+    }
   });
   it('include with select', async () => {
     const data = await api.TestPost.selectFirst({
