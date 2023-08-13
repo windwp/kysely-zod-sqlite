@@ -79,6 +79,15 @@ export function runTest(api: TestApi) {
         cb => cb.onDelete('cascade')
       )
       .execute();
+    await api.ky.schema
+      .createTable('TestNoId')
+      .ifNotExists()
+      .addColumn('userId', 'text')
+      .addColumn('postId', 'text')
+      .addColumn('sample', 'text')
+      .addUniqueConstraint('userId_postId_unique', ['userId', 'postId'])
+      .execute();
+
     // await api.runSql(sql`PRAGMA foreign_keys=on`);
   });
   beforeEach(async () => {
@@ -548,5 +557,15 @@ export function runTest(api: TestApi) {
     expect(data?.user?.id).toBeTruthy();
     expect(data?.user?.email).toBeTruthy();
     expect(data?.user?.data).toBeFalsy();
+  });
+  it('should work with noid', async () => {
+    await api.TestNoId.insertOne({
+      postId: '123456',
+      userId: '123456',
+      sample: 'sample',
+    });
+    const check = await api.TestNoId.selectMany({});
+    expect(check.length).toBe(1);
+    expect((check[0] as any)['id']).toBe(undefined);
   });
 }

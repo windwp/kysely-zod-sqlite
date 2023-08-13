@@ -52,6 +52,12 @@ export const userRelationSchema = userSchema.extend({
     table: 'TestPost',
   }),
 });
+export const testNoIdSchema = z.object({
+  userId: z.string(),
+  postId: z.string(),
+  sample: z.string(),
+});
+export type NoIdTable = TypeOf<typeof testNoIdSchema>;
 
 export type PostTable = TypeOf<typeof postRelationSchema>;
 
@@ -60,6 +66,7 @@ export type UserTable = TypeOf<typeof userRelationSchema>;
 export const dbSchema = z.object({
   TestUser: userRelationSchema,
   TestPost: postRelationSchema,
+  TestNoId: testNoIdSchema,
 });
 
 export type Database = TypeOf<typeof dbSchema>;

@@ -27,7 +27,7 @@ import type {
   TableRelation,
 } from './types';
 
-export class SqliteApi<T extends { [key: string]: { id: string } }> {
+export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
   readonly ky: Kysely<T>;
   readonly config: DbConfig;
   readonly schema: z.ZodObject<any, any, any, T>;
@@ -229,11 +229,15 @@ export class SqliteApi<T extends { [key: string]: { id: string } }> {
     return data.map(o => this.schema?.shape[table]?.partial().parse(o)) as X[];
   }
 
-  table<K extends keyof T & string>(tableName: K) {
+  table<K extends keyof T & string>(
+    tableName: K,
+    opts?: { timeStamp: boolean; autoId: boolean }
+  ) {
     return new PTable<T[K], T>(
       this.ky,
       tableName,
-      this.schema.shape[tableName]
+      this.schema.shape[tableName],
+      opts
     );
   }
 }
@@ -316,14 +320,21 @@ export class PTable<
   T extends { [K in keyof T]: { id: string } }
 > {
   timeStamp: boolean;
+  autoId: boolean;
   relations: { [k: string]: TableRelation };
   constructor(
     private readonly ky: Kysely<T>,
     public readonly table: keyof T & string,
-    public readonly schema?: ZodObject<any, any, any, T>
+    public readonly schema?: ZodObject<any, any, any, T>,
+    opts?: {
+      timeStamp: boolean;
+      autoId: boolean;
+    }
   ) {
     this.schema = schema;
-    this.timeStamp = !!this.schema?.shape['updatedAt'];
+    this.timeStamp = opts?.timeStamp ?? !!this.schema?.shape['updatedAt'];
+    this.autoId = opts?.autoId ?? this.schema?.shape['id'];
+
     this.relations = {};
     if (this.schema?.shape) {
       for (const [key, value] of Object.entries(this.schema.shape)) {
@@ -439,7 +450,7 @@ export class PTable<
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
-    if (!value.id) value.id = uid();
+    if (!value.id && this.autoId) value.id = uid();
     if (this.timeStamp) {
       // @ts-ignore
       if (!value.createdAt) value.createdAt = new Date();
@@ -513,7 +524,7 @@ export class PTable<
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {
     values.forEach((o: any) => {
-      if (!o.id) o.id = uid();
+      if (!o.id && this.autoId) o.id = uid();
       if (this.timeStamp) {
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();

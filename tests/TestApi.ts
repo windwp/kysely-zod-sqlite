@@ -8,4 +8,7 @@ export class TestApi extends SqliteApi<Database> {
   get TestPost() {
     return this.table('TestPost');
   }
+  get TestNoId() {
+    return this.table('TestNoId');
+  }
 }
