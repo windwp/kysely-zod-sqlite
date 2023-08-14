@@ -14,7 +14,7 @@
     "cm": "cz",
     "lint": "eslint ./src/ --fix",
     "semantic-release": "semantic-release",
-    "test": "vitest --single-thread",
+    "test": "vitest --single-thread --hideSkippedTests",
     "typecheck": "tsc --noEmit"
   },
   "repository": {

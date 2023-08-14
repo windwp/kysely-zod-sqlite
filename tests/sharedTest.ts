@@ -406,17 +406,16 @@ export function runTest(api: TestApi) {
     expect(check.length).toBe(6);
   });
 
-  it('select where will ignore field is undefined', async () => {
-    const first = await api.TestUser.selectFirst({
-      where: {
-        name: undefined,
-        id: userArr[0].id,
-      },
-      select: { id: true, name: true },
-    });
-    expect(first).toBeTruthy();
-    expect(first?.name).toBeTruthy();
-    expect(first?.data).toBeFalsy();
+  it('select where will name field is undefined will thow error', async () => {
+    await expect(async () => {
+      await api.TestUser.selectFirst({
+        where: {
+          name: undefined,
+          id: userArr[0].id,
+        },
+        select: { id: true, name: true },
+      });
+    }).rejects.toThrowError();
   });
 
   it('updateOne should working', async () => {

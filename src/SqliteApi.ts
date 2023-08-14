@@ -9,7 +9,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import { ZodAny, ZodObject, ZodRawShape, z } from 'zod';
+import { ZodAny, ZodObject, z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
@@ -289,7 +289,17 @@ function mappingQueryOptions<V>(
           Object.keys(opts.where[key] as any)[0],
           Object.values(opts.where[key] as any)[0]
         );
-      } else if (opts.where[key] !== undefined && opts.where[key] !== null) {
+      } else {
+        if (opts.where[key] == undefined || opts.where[key] == null) {
+          opts.where[key] = '<------ Error' as any;
+          throw new Error(
+            `select value of '${key}' is null ${JSON.stringify(
+              opts.where,
+              null,
+              2
+            )}`
+          );
+        }
         query = query.where(key, '=', opts.where[key]);
       }
     }
@@ -320,7 +330,9 @@ function mappingRelations<V>(
           ? Object.keys(relation.schema?.shape)
           : Object.keys((select as any)?.select);
       if (!columns || columns.length == 0) {
-        throw new Error('input schema for table or define a column to select ');
+        throw new Error(
+          'you need input schema for table or define a column to select '
+        );
       }
       const fncJson = relation.type == 'one' ? jsonObjectFrom : jsonArrayFrom;
       query = query.select((eb: any) => [
