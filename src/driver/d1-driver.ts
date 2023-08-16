@@ -124,7 +124,9 @@ class D1Connection implements DatabaseConnection {
     this.#config = config;
   }
 
-  async executeQuery<T>(compiledQuery: CompiledQuery): Promise<QueryResult<T>> {
+  async executeQuery<T>(
+    compiledQuery: CompiledQuery
+  ): Promise<QueryResult<T> & { error?: any }> {
     let action = (compiledQuery as any).action;
 
     if (!action) {
@@ -163,7 +165,7 @@ class D1Connection implements DatabaseConnection {
       this.#config.logger?.error(body.sql);
       this.#config.logger?.error(body.parameters);
       this.#config.logger?.error('===================================]');
-      return { rows: [], insertId: undefined };
+      return { rows: [], error: error };
     }
   }
 

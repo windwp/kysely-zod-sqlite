@@ -222,21 +222,16 @@ export function runTest(api: TestApi) {
   });
 
   it('insert with wrong item should not working', async () => {
-    const wrongUser = ({
+    const wrongUser = {
       name: 'check',
       email: 'usercheck@gmail.com',
       wrong: 'false',
       updatedAt: new Date(),
-    } as unknown) as UserTable;
-    {
-      const check = await api.TestUser.insertOne(wrongUser);
-      expect(check).toBeFalsy();
-    }
+    } as unknown as UserTable;
 
-    {
-      const check = await api.TestUser.insertMany([wrongUser]);
-      expect(check).toBeFalsy();
-    }
+    await expect(async () => {
+      await api.TestUser.insertOne(wrongUser);
+    }).rejects.toThrowError();
   });
   it('sort working', async () => {
     const check = await api.TestUser.selectMany({
@@ -314,7 +309,7 @@ export function runTest(api: TestApi) {
 
   it('batchone should working', async () => {
     {
-      await api.batchOneSmt(
+      const check = await api.batchOneSmt(
         api.ky
           .updateTable('TestUser')
           .set({
@@ -326,6 +321,9 @@ export function runTest(api: TestApi) {
           ['bbb', 'user1'],
         ]
       );
+      expect(check.rows.length).toBe(2);
+      expect(check.error).toBeFalsy();
+
       const check0 = await api.TestUser.selectFirst({
         where: {
           name: 'user0',
@@ -337,6 +335,19 @@ export function runTest(api: TestApi) {
       await api.batchOneSmt(sql`update TestUser set name = ? where id = ?`, [
         ['user2', userArr[0].id],
       ]);
+    }
+    {
+      await expect(async () => {
+        await api.batchOneSmt(
+          api.ky
+            .updateTable('TestUser')
+            .set({
+              data: sql` json_set(dataxx, '$.value', ?)`,
+            })
+            .where('name', '=', 'xx'),
+          [['aaa', 'user0']]
+        );
+      }).rejects.toThrowError();
     }
   });
   it('batchone with value is an object', async () => {
@@ -533,6 +544,8 @@ export function runTest(api: TestApi) {
         name: 'update-upsert@gmail.com',
       },
     });
+    expect(v).toBeTruthy();
+    if (!v) return;
     v.name = 'insertOrUpdate@gmail.com';
     await api.TestPost.upsert({
       data: v,

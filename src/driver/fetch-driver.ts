@@ -50,7 +50,9 @@ class FetchConnection implements DatabaseConnection {
     this.#config = config;
   }
 
-  async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
+  async executeQuery<O>(
+    compiledQuery: CompiledQuery
+  ): Promise<QueryResult<O> & { error?: any }> {
     let action = (compiledQuery as any).action;
     if (!action) {
       action =
@@ -95,15 +97,13 @@ class FetchConnection implements DatabaseConnection {
           numAffectedRows: results.results?.changes ?? undefined,
         } as any;
       }
+      return { rows: [], error: await res.text(), numAffectedRows: BigInt(0) };
     } catch (error: any) {
       this.#config.logger?.error(
         `[FetchDriver] ${this.#config.apiUrl} Error: ${error.message}`
       );
+      throw error;
     }
-    return {
-      insertId: undefined,
-      rows: [],
-    };
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await, require-yield

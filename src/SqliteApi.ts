@@ -90,10 +90,8 @@ export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
     sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
     batchParams: Array<any[]>,
     opts?: ApiOptions
-  ): Promise<ExtractResultFromQuery<V>[]> {
-    return (
-      await this.execQuery(this.$batchOneSmt(sqlQuery, batchParams), opts)
-    )?.rows;
+  ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
+    return await this.execQuery(this.$batchOneSmt(sqlQuery, batchParams), opts);
   }
 
   $batchOneSmt(
@@ -375,8 +373,8 @@ export class PTable<
     if (this.schema?.shape) {
       for (const [key, value] of Object.entries(this.schema.shape)) {
         if ((value as ZodAny).description) {
-          this.relations[key] = ((value as ZodAny)
-            .description as unknown) as TableRelation;
+          this.relations[key] = (value as ZodAny)
+            .description as unknown as TableRelation;
         }
       }
     }
@@ -438,9 +436,7 @@ export class PTable<
       .set(value as any);
   }
 
-  updateMany(
-    opts: Query<V> & { data: Partial<V> }
-  ): Promise<{
+  updateMany(opts: Query<V> & { data: Partial<V> }): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
@@ -456,9 +452,7 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  async updateOne(
-    opts: Query<V> & { data: Partial<V> }
-  ): Promise<{
+  async updateOne(opts: Query<V> & { data: Partial<V> }): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {

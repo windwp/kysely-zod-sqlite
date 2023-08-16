@@ -29,7 +29,6 @@ const db = new Database(':memory:');
 global.fetch = vi.fn((_, options) => {
   try {
     const data = handler(db, JSON.parse(options?.body as string));
-
     return Promise.resolve({
       json: () => new Promise(resolve => resolve(data)),
       ok: true,
@@ -37,7 +36,7 @@ global.fetch = vi.fn((_, options) => {
   } catch (error: any) {
     loglevel.error('Fetch ================');
     loglevel.error(error);
-    return Promise.resolve({ text: () => error.message, ok: false });
+    throw error;
   }
 });
 describe('FetchDriver', () => {

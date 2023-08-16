@@ -140,7 +140,9 @@ class BetterConnection implements DatabaseConnection {
     this.#config = config;
   }
 
-  async executeQuery<O>(compiledQuery: CompiledQuery): Promise<QueryResult<O>> {
+  async executeQuery<O>(
+    compiledQuery: CompiledQuery
+  ): Promise<QueryResult<O> & { error?: any }> {
     let action = (compiledQuery as any).action;
 
     if (!action) {
@@ -180,7 +182,7 @@ class BetterConnection implements DatabaseConnection {
       this.#config.logger?.error(body.sql);
       this.#config.logger?.error(body.parameters);
       this.#config.logger?.error('===================================]');
-      return { rows: [], insertId: undefined };
+      throw error
     }
   }
 
