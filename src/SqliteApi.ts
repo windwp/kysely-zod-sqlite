@@ -505,7 +505,7 @@ export class PTable<
   async upsert(opts: {
     data: Partial<V> & { id?: V['id'] };
     where?: QueryWhere<V>;
-  }): Promise<Partial<V> & { id: string }> {
+  }): Promise<(Partial<V> & { id: string }) | undefined> {
     if (opts.data.id) {
       await this.updateOne({
         where: { id: opts.data.id, ...opts.where } as QueryWhere<V>,

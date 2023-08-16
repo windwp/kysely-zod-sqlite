@@ -130,7 +130,6 @@
     "superjson": "^1.12.1",
     "type-fest": "^3.11.0",
     "uid": "^2.0.2",
-    "vite": "^4.4.9",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -156,6 +155,6 @@
     "semantic-release": "^21.0.1",
     "ts-node": "^10.2.1",
     "typescript": "^5.0.2",
-    "vitest": "^0.34.1"
+    "vitest": "^0.33.0"
   }
 }
