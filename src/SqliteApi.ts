@@ -20,6 +20,7 @@ import type {
   DataBody,
   DbConfig,
   ExtractResultFromQuery,
+  FetchConfig,
   OneActionBody,
   Query,
   QueryRelations,
@@ -29,7 +30,7 @@ import type {
 
 export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
   readonly ky: Kysely<T>;
-  readonly config: DbConfig;
+  readonly config: DbConfig | FetchConfig;
   readonly schema: z.ZodObject<any, any, any, T>;
 
   constructor({

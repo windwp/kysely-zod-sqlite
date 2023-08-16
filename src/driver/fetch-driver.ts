@@ -4,12 +4,12 @@ import type {
   Driver,
   QueryResult,
 } from 'kysely';
-import { DbConfig } from '../types';
+import { FetchConfig } from '../types';
 
 export class FetchDriver implements Driver {
-  #config: DbConfig;
+  #config: Required<FetchConfig>;
 
-  constructor(config: DbConfig) {
+  constructor(config: Required<FetchConfig>) {
     this.#config = config;
   }
 
@@ -44,9 +44,9 @@ export class FetchDriver implements Driver {
 }
 
 class FetchConnection implements DatabaseConnection {
-  #config: DbConfig;
+  #config: FetchConfig;
 
-  constructor(config: DbConfig) {
+  constructor(config: FetchConfig) {
     this.#config = config;
   }
 

@@ -3,15 +3,21 @@ import type { Logger } from 'loglevel';
 import type { ZodObject } from 'zod';
 
 export type DbConfig = {
+  logger?: Logger;
+  database?: string;
+  options?: ApiOptions;
+};
+export type FetchConfig = {
   apiUrl: string;
-  database: string;
   apiKey: string;
+  database: string;
   logger?: Logger;
   options?: ApiOptions;
 };
 export type ApiOptions = {
   retry?: number;
   showSql?: boolean;
+  throwError?: boolean;
 };
 
 export type OneActionBody =
