@@ -480,9 +480,12 @@ export class PTable<
 
   async insertOne(
     value: Partial<V> & { id?: string }
-  ): Promise<Partial<V> & { id: string }> {
-    await this.$insertOne(value).executeTakeFirst();
-    return value as Partial<V> & { id: string };
+  ): Promise<(Partial<V> & { id: string }) | undefined> {
+    const check = await this.$insertOne(value).executeTakeFirst();
+    if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
+      return value as Partial<V> & { id: string };
+    }
+    return undefined;
   }
 
   $insertOne(value: Partial<V> & { id?: string }) {
@@ -553,9 +556,12 @@ export class PTable<
       );
   }
 
-  async insertMany(values: Array<Partial<V>>): Promise<V[]> {
-    await this.$insertMany(values).execute();
-    return values as V[];
+  async insertMany(values: Array<Partial<V>>): Promise<V[] | undefined> {
+    const check = await this.$insertMany(values).executeTakeFirst();
+    if (check?.numInsertedOrUpdatedRows == BigInt(values.length)) {
+      return values as V[];
+    }
+    return undefined;
   }
 
   $insertMany(values: Array<Partial<V> & { id?: string }>) {

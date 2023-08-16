@@ -181,10 +181,10 @@ export function runTest(api: TestApi) {
         email: 'usercheck@gmail.com',
         updatedAt: new Date(),
       });
-      expect(check.id).toBeTruthy();
-      expect(check.id?.length).toBe(24);
-      expect(check.createdAt instanceof Date).toBeTruthy();
-      expect(check.updatedAt instanceof Date).toBeTruthy();
+      expect(check?.id).toBeTruthy();
+      expect(check?.id?.length).toBe(24);
+      expect(check?.createdAt instanceof Date).toBeTruthy();
+      expect(check?.updatedAt instanceof Date).toBeTruthy();
     }
     {
       const postArr = Array.from({ length: 10 }).map((_, i) => {
@@ -221,6 +221,23 @@ export function runTest(api: TestApi) {
     }
   });
 
+  it('insert with wrong item should not working', async () => {
+    const wrongUser = ({
+      name: 'check',
+      email: 'usercheck@gmail.com',
+      wrong: 'false',
+      updatedAt: new Date(),
+    } as unknown) as UserTable;
+    {
+      const check = await api.TestUser.insertOne(wrongUser);
+      expect(check).toBeFalsy();
+    }
+
+    {
+      const check = await api.TestUser.insertMany([wrongUser]);
+      expect(check).toBeFalsy();
+    }
+  });
   it('sort working', async () => {
     const check = await api.TestUser.selectMany({
       where: {
