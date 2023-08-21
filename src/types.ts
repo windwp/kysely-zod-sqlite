@@ -1,6 +1,7 @@
 import type { ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
 import type { Logger } from 'loglevel';
 import type { ZodObject } from 'zod';
+import type { Fetcher } from '@cloudflare/workers-types';
 
 export type DbConfig = {
   logger?: Logger;
@@ -11,6 +12,7 @@ export type FetchConfig = {
   apiUrl: string;
   apiKey: string;
   database: string;
+  binding?: Fetcher;
   logger?: Logger;
   options?: ApiOptions;
 };

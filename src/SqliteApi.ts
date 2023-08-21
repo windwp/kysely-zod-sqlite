@@ -470,6 +470,7 @@ export class PTable<
     opts.select = { id: true };
     selectQuery = mappingQueryOptions(selectQuery, opts);
     query = query.where('id', 'in', selectQuery);
+    delete opts.data.id;
     return query.set(opts.data as any);
   }
 

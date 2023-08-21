@@ -6,43 +6,6 @@ import type {
 } from 'kysely';
 import { FetchConfig } from '../types';
 
-export class FetchDriver implements Driver {
-  #config: Required<FetchConfig>;
-
-  constructor(config: Required<FetchConfig>) {
-    this.#config = config;
-  }
-
-  async init(): Promise<void> {
-    // Nothing to do here.
-  }
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async acquireConnection(): Promise<DatabaseConnection> {
-    return new FetchConnection(this.#config);
-  }
-
-  async beginTransaction(): Promise<void> {
-    // Nothing to do here.
-  }
-
-  async commitTransaction(): Promise<void> {
-    // Nothing to do here.
-  }
-
-  async rollbackTransaction(): Promise<void> {
-    // Nothing to do here.
-  }
-
-  async releaseConnection(): Promise<void> {
-    // Nothing to do here.
-  }
-
-  async destroy(): Promise<void> {
-    // Nothing to do here.
-  }
-}
-
 class FetchConnection implements DatabaseConnection {
   #config: FetchConfig;
 
@@ -77,16 +40,25 @@ class FetchConnection implements DatabaseConnection {
     this.#config.logger?.debug(body);
 
     try {
-      const res = await fetch(this.#config.apiUrl, {
+      const req = {
         method: 'POST',
-        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
           'api-key': this.#config.apiKey,
+          cache: 'no-cache, no-store',
         },
         body: JSON.stringify(body),
-      });
-      if (res.ok) {
+      } as const;
+      let res: Response;
+      if (this.#config.binding?.fetch) {
+        res = (await this.#config.binding.fetch(
+          this.#config.apiUrl,
+          req
+        )) as unknown as Response;
+      } else {
+        res = await fetch(this.#config.apiUrl);
+      }
+      if (res && res?.ok) {
         const results = await res.json();
         return {
           insertId: results.results?.lastInsertRowId
@@ -109,5 +81,41 @@ class FetchConnection implements DatabaseConnection {
   // eslint-disable-next-line @typescript-eslint/require-await, require-yield
   async *streamQuery<R>(): AsyncIterableIterator<QueryResult<R>> {
     throw new Error('FetchConnection does not support streaming');
+  }
+}
+export class FetchDriver implements Driver {
+  #config: Required<FetchConfig>;
+
+  constructor(config: Required<FetchConfig>) {
+    this.#config = config;
+  }
+
+  async init(): Promise<void> {
+    // Nothing to do here.
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async acquireConnection(): Promise<DatabaseConnection> {
+    return new FetchConnection(this.#config);
+  }
+
+  async beginTransaction(): Promise<void> {
+    // Nothing to do here.
+  }
+
+  async commitTransaction(): Promise<void> {
+    // Nothing to do here.
+  }
+
+  async rollbackTransaction(): Promise<void> {
+    // Nothing to do here.
+  }
+
+  async releaseConnection(): Promise<void> {
+    // Nothing to do here.
+  }
+
+  async destroy(): Promise<void> {
+    // Nothing to do here.
   }
 }
