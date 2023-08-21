@@ -46,7 +46,10 @@ export class D1Driver implements Driver {
   }
 }
 
-async function handler(d1: D1Database, body: DataBody): Promise<D1Result<any>> {
+export async function handler(
+  d1: D1Database,
+  body: DataBody
+): Promise<D1Result<any>> {
   switch (body.action) {
     case 'run':
       return await d1
@@ -115,20 +118,7 @@ async function handler(d1: D1Database, body: DataBody): Promise<D1Result<any>> {
       throw new Error(`Unknown command :${body.action}`);
   }
 }
-export async function D1Handler(d1: D1Database, body: DataBody) {
-  const results = await handler(d1, body);
-  const numAffectedRows =
-    results.meta?.changes > 0 ? results.meta?.changes : undefined;
-  return {
-    insertId:
-      results.meta.last_row_id === undefined ||
-      results.meta.last_row_id === null
-        ? undefined
-        : results.meta.last_row_id,
-    rows: results.results || [],
-    numAffectedRows,
-  };
-}
+
 class D1Connection implements DatabaseConnection {
   #config: DbConfig;
   #d1: D1Database;
@@ -160,7 +150,18 @@ class D1Connection implements DatabaseConnection {
     this.#config.logger?.debug(body);
 
     try {
-      return await D1Handler(this.#d1, body);
+      const results = await handler(this.#d1, body);
+      const numAffectedRows =
+        results.meta?.changes > 0 ? results.meta?.changes : undefined;
+      return {
+        insertId:
+          results.meta.last_row_id === undefined ||
+          results.meta.last_row_id === null
+            ? undefined
+            : results.meta.last_row_id,
+        rows: results.results || [],
+        numAffectedRows,
+      };
     } catch (error: any) {
       this.#config.logger?.error('[SQL_ERROR=========================');
       this.#config.logger?.error(error.message);
