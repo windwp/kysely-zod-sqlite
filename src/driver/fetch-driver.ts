@@ -56,9 +56,9 @@ class FetchConnection implements DatabaseConnection {
           req
         )) as unknown as Response;
       } else {
-        res = await fetch(this.#config.apiUrl);
+        res = await fetch(this.#config.apiUrl, req);
       }
-      if (res && res?.ok) {
+      if (res?.ok) {
         const results = await res.json();
         return {
           insertId: results.results?.lastInsertRowId
@@ -84,9 +84,9 @@ class FetchConnection implements DatabaseConnection {
   }
 }
 export class FetchDriver implements Driver {
-  #config: Required<FetchConfig>;
+  #config: FetchConfig;
 
-  constructor(config: Required<FetchConfig>) {
+  constructor(config: FetchConfig) {
     this.#config = config;
   }
 
