@@ -6,16 +6,13 @@ import { TestApi } from './TestApi';
 import { BetterDriver } from '../src/driver/sqlite-driver';
 import Database from 'better-sqlite3';
 import loglevel from 'loglevel';
-import { DbConfig } from '../src/types';
 import { dbSchema } from './kysely-schema';
 
 loglevel.setLevel(loglevel.levels.DEBUG);
-const config: DbConfig = {
-  apiKey: '',
-  apiUrl: '',
+const config = {
   database: '',
   logger: loglevel,
-};
+} as const;
 const api = new TestApi({
   config,
   schema: dbSchema,

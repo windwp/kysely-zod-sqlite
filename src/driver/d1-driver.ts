@@ -48,18 +48,22 @@ export class D1Driver implements Driver {
 
 async function handler(d1: D1Database, body: DataBody): Promise<D1Result<any>> {
   switch (body.action) {
-    case 'run': {
+    case 'run':
       return await d1
         .prepare(body.sql)
         .bind(...body.parameters)
         .run();
-    }
-    case 'selectFirst':
-      // @ts-ignore
-      return d1
+    case 'selectFirst': {
+      const first = await d1
         .prepare(body.sql)
         .bind(...body.parameters)
         .first();
+      return {
+        success: true,
+        meta: { changes: 0 },
+        results: [first],
+      };
+    }
     case 'selectAll':
       return d1
         .prepare(body.sql)
@@ -114,13 +118,13 @@ async function handler(d1: D1Database, body: DataBody): Promise<D1Result<any>> {
 export async function D1Handler(d1: D1Database, body: DataBody) {
   const results = await handler(d1, body);
   const numAffectedRows =
-    results.meta.changes > 0 ? BigInt(results.meta.changes) : undefined;
+    results.meta?.changes > 0 ? results.meta?.changes : undefined;
   return {
     insertId:
       results.meta.last_row_id === undefined ||
       results.meta.last_row_id === null
         ? undefined
-        : BigInt(results.meta.last_row_id),
+        : results.meta.last_row_id,
     rows: results.results || [],
     numAffectedRows,
   };
