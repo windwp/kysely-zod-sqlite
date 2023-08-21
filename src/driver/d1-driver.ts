@@ -47,7 +47,7 @@ export class D1Driver implements Driver {
 }
 
 // my handler focus on support batch with cloudflare
-async function D1Handler(
+export async function D1Handler(
   d1: D1Database,
   body: DataBody
 ): Promise<D1Result<any>> {

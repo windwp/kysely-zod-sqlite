@@ -1,11 +1,10 @@
 # feature 
   It has an easy to use API like Prisma and a powerful query with Kysely.
 
-
-- [x] api similar to primsa
-- [x] automatic parse result by zod (for json string on sqlite) 
-- [x] support relation like prisma
-- [ ] auto generate primsa to zod + kysely
+- [x] automatic parse result by zod (for json string, boolean and datetime) 
+- [x] api similar to primsa (support query relation like prisma)
+- [x] unit testing on local.
+- [x] remote proxy call from your app or between worker
 
 *Warning* It only support D1 and sqlite.
 ## Thank
