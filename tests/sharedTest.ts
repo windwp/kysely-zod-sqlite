@@ -43,7 +43,7 @@ export function runTest(api: TestApi) {
     api.config.logger?.setLevel('silent');
     // await api.runSql(sql`PRAGMA foreign_keys=off`);
     // await api.runSql(sql`DROP TABLE TestUser`);
-    await api.runSql(sql`DROP TABLE TestPost`);
+    // await api.runSql(sql`DROP TABLE TestPost`);
     await api.ky.schema
       .createTable('TestUser')
       .ifNotExists()
