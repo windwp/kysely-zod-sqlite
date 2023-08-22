@@ -367,7 +367,7 @@ export class PTable<
   relations: { [k: string]: TableRelation };
   constructor(
     private readonly ky: Kysely<T>,
-    public readonly table: keyof T & string,
+    private readonly table: keyof T & string,
     public readonly schema?: ZodObject<any, any, any, T>,
     opts?: {
       timeStamp?: boolean;
