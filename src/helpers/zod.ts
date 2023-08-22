@@ -10,40 +10,36 @@ export const zBoolean = z.custom<boolean>().transform(value => {
 
 // parse json and parse child with schema
 export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
-  return z.custom<T>().transform(
-    (v, ctx): T => {
-      if (!v || typeof v !== 'string') return v;
-      if (v === '') return (defaultValue ?? {}) as T;
-      try {
-        return schema.parse(JSON.parse(v));
-      } catch (e: any) {
-        ctx.addIssue({
-          code: 'custom',
-          message: e.message,
-        });
-        return z.NEVER;
-      }
+  return z.custom<T>().transform((v, ctx): T => {
+    if (!v || typeof v !== 'string') return v;
+    if (v === '') return (defaultValue ?? {}) as T;
+    try {
+      return schema.parse(JSON.parse(v));
+    } catch (e: any) {
+      ctx.addIssue({
+        code: 'custom',
+        message: e.message,
+      });
+      return z.NEVER;
     }
-  );
+  });
 }
 export function zJsonObject<T>(
   defaultValue?: T extends { parse: any } ? never : T
 ) {
-  return z.custom<T>().transform(
-    (v, ctx): T => {
-      if (!v || typeof v !== 'string') return v;
-      if (v === '') return (defaultValue ?? {}) as T;
-      try {
-        return JSON.parse(v);
-      } catch (e: any) {
-        ctx.addIssue({
-          code: 'custom',
-          message: e.message,
-        });
-        return z.NEVER;
-      }
+  return z.custom<T>().transform((v, ctx): T => {
+    if (!v || typeof v !== 'string') return v;
+    if (v === '') return (defaultValue ?? {}) as T;
+    try {
+      return JSON.parse(v);
+    } catch (e: any) {
+      ctx.addIssue({
+        code: 'custom',
+        message: e.message,
+      });
+      return z.NEVER;
     }
-  );
+  });
 }
 
 export function zJsonArray<T>(
@@ -120,19 +116,17 @@ export function zRelationMany<T>(
 
 export const zDate = z
   .custom<Date>()
-  .transform(
-    (v, ctx): Date => {
-      if (!v || v instanceof Date) return v;
-      if (typeof v === 'string') {
-        if ((v as string).length == 24) return parseISO(v);
+  .transform((v, ctx): Date => {
+    if (!v || v instanceof Date) return v;
+    if (typeof v === 'string') {
+      if ((v as string).length == 24) return parseISO(v);
 
-        //default format of sqlite date
-        return parse(v, 'yyyy-MM-dd HH:mm:ss', new Date());
-      }
-      ctx.addIssue({
-        code: 'invalid_date',
-      });
-      return z.NEVER;
+      //default format of sqlite date
+      return parse(v, 'yyyy-MM-dd HH:mm:ss', new Date());
     }
-  )
+    ctx.addIssue({
+      code: 'invalid_date',
+    });
+    return z.NEVER;
+  })
   .optional();

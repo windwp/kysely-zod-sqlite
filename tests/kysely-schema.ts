@@ -63,10 +63,18 @@ export type PostTable = TypeOf<typeof postRelationSchema>;
 
 export type UserTable = TypeOf<typeof userRelationSchema>;
 
+export const orderSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  price: z.number(),
+});
+
+export type OrderTable = TypeOf<typeof orderSchema>;
 export const dbSchema = z.object({
   TestUser: userRelationSchema,
   TestPost: postRelationSchema,
   TestNoId: testNoIdSchema,
+  TestOrder: orderSchema,
 });
 
 export type Database = TypeOf<typeof dbSchema>;

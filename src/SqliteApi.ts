@@ -2,6 +2,7 @@ import {
   CompiledQuery,
   Driver,
   InsertQueryBuilder,
+  InsertResult,
   Kysely,
   RawBuilder,
   SelectQueryBuilder,
@@ -28,7 +29,9 @@ import type {
   TableRelation,
 } from './types';
 
-export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
+export class SqliteApi<
+  T extends { [key: string]: { id: string | number } | any }
+> {
   readonly ky: Kysely<T>;
   readonly config: DbConfig | FetchConfig;
   readonly schema: z.ZodObject<any, any, any, T>;
@@ -254,7 +257,11 @@ export class SqliteApi<T extends { [key: string]: { id: string } | any }> {
 
   table<K extends keyof T & string>(
     tableName: K,
-    opts?: { timeStamp: boolean; autoId: boolean }
+    opts?: {
+      timeStamp?: boolean;
+      autoId?: boolean;
+      autoIdFnc?: (tableName?: string) => string;
+    }
   ) {
     return new PTable<T[K], T>(
       this.ky,
@@ -351,24 +358,32 @@ function mappingRelations<V>(
  * Api is inspire by Prisma
  */
 export class PTable<
-  V extends { id: string },
-  T extends { [K in keyof T]: { id: string } }
+  V extends { id: string | number },
+  T extends { [K in keyof T]: { id: string | number } }
 > {
-  timeStamp: boolean;
-  autoId: boolean;
+  private timeStamp: boolean;
+  private autoId: boolean;
+  private autoIdFnc: (tableName?: string) => string;
   relations: { [k: string]: TableRelation };
   constructor(
     private readonly ky: Kysely<T>,
     public readonly table: keyof T & string,
     public readonly schema?: ZodObject<any, any, any, T>,
     opts?: {
-      timeStamp: boolean;
-      autoId: boolean;
+      timeStamp?: boolean;
+      autoId?: boolean;
+      autoIdFnc?: (tableName?: string) => string;
     }
   ) {
     this.schema = schema;
     this.timeStamp = opts?.timeStamp ?? !!this.schema?.shape['updatedAt'];
-    this.autoId = opts?.autoId ?? this.schema?.shape['id'];
+    this.autoId =
+      opts?.autoId ?? this.schema?.shape['id']?._def?.typeName === 'ZodString';
+    this.autoIdFnc =
+      opts?.autoIdFnc ||
+      function () {
+        return uid();
+      };
 
     this.relations = {};
     if (this.schema?.shape) {
@@ -418,7 +433,7 @@ export class PTable<
 
   async updateById(
     id: string,
-    value: Partial<V & { id?: string }>
+    value: Partial<V>
   ): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
@@ -475,17 +490,20 @@ export class PTable<
   }
 
   async insertOne(
-    value: Partial<V> & { id?: string }
-  ): Promise<(Partial<V> & { id: string }) | undefined> {
-    const check = await this.$insertOne(value).executeTakeFirst();
-    if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
-      return value as Partial<V> & { id: string };
+    value: Partial<V>
+  ): Promise<Partial<V & { id: string | number }> | undefined> {
+    const check = (await this.$insertOne(value).executeTakeFirst()) as any;
+    if (check?.numInsertedOrUpdatedRows == 1) {
+      if (!this.autoId && check.insertId) {
+        value.id = Number(check.insertId);
+      }
+      return value as Partial<V> & { id: string | number };
     }
     return undefined;
   }
 
-  $insertOne(value: Partial<V> & { id?: string }) {
-    if (!value.id && this.autoId) value.id = uid();
+  $insertOne(value: Partial<V>) {
+    if (!value.id && this.autoId) value.id = this.autoIdFnc();
     if (this.timeStamp) {
       // @ts-ignore
       if (!value.createdAt) value.createdAt = new Date();
@@ -501,7 +519,7 @@ export class PTable<
   async upsert(opts: {
     data: Partial<V> & { id?: V['id'] };
     where?: QueryWhere<V>;
-  }): Promise<(Partial<V> & { id: string }) | undefined> {
+  }): Promise<Partial<V> | undefined> {
     if (opts.data.id) {
       await this.updateOne({
         where: { id: opts.data.id, ...opts.where } as QueryWhere<V>,
@@ -509,7 +527,7 @@ export class PTable<
       });
       return opts.data as any;
     }
-    opts.data.id = uid();
+    opts.data.id = this.autoIdFnc();
     if (!opts.where) {
       await this.insertOne(opts.data);
       return opts.data as any;
@@ -525,7 +543,7 @@ export class PTable<
 
   /** conflicts columns should be a unique or primary key */
   async insertConflict(opts: {
-    create: Partial<V> & { id?: string };
+    create: Partial<V>;
     update: Partial<V>;
     conflicts: Array<keyof V & string>;
   }) {
@@ -539,11 +557,11 @@ export class PTable<
     update,
     conflicts,
   }: {
-    create: Partial<V> & { id?: string };
+    create: Partial<V>;
     update: Partial<V>;
     conflicts: Array<keyof V & string>;
   }) {
-    if (!create.id) create.id = uid();
+    if (!create.id && this.autoId) create.id = this.autoIdFnc();
     return this.ky
       .insertInto(this.table)
       .values(create as any)
@@ -555,14 +573,20 @@ export class PTable<
   async insertMany(values: Array<Partial<V>>): Promise<V[] | undefined> {
     const check = await this.$insertMany(values).executeTakeFirst();
     if (check?.numInsertedOrUpdatedRows == BigInt(values.length)) {
+      if (!this.autoId) {
+        // not sure about this
+        values.forEach((o, index) => {
+          o.id = Number(check.insertId) - values.length + index + 1;
+        });
+      }
       return values as V[];
     }
     return undefined;
   }
 
-  $insertMany(values: Array<Partial<V> & { id?: string }>) {
+  $insertMany(values: Array<Partial<V>>) {
     values.forEach((o: any) => {
-      if (!o.id && this.autoId) o.id = uid();
+      if (!o.id && this.autoId) o.id = this.autoIdFnc();
       if (this.timeStamp) {
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();

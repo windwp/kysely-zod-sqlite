@@ -41,9 +41,6 @@ export function runTest(api: TestApi) {
   let userArr: UserTable[];
   beforeAll(async () => {
     api.config.logger?.setLevel('silent');
-    // await api.runSql(sql`PRAGMA foreign_keys=off`);
-    // await api.runSql(sql`DROP TABLE TestUser`);
-    // await api.runSql(sql`DROP TABLE TestPost`);
     await api.ky.schema
       .createTable('TestUser')
       .ifNotExists()
@@ -88,8 +85,13 @@ export function runTest(api: TestApi) {
       .addColumn('sample', 'text')
       .addUniqueConstraint('userId_postId_unique', ['userId', 'postId'])
       .execute();
-
-    // await api.runSql(sql`PRAGMA foreign_keys=on`);
+    await api.ky.schema
+      .createTable('TestOrder')
+      .ifNotExists()
+      .addColumn('id', 'integer', col => col.autoIncrement().primaryKey())
+      .addColumn('name', 'text')
+      .addColumn('price', 'integer')
+      .execute();
   });
   beforeEach(async () => {
     const data = await textFixture(api);
@@ -613,5 +615,37 @@ export function runTest(api: TestApi) {
     const check = await api.TestNoId.selectMany({});
     expect(check.length).toBe(1);
     expect((check[0] as any)['id']).toBe(undefined);
+  });
+
+  it('should insert increment', async () => {
+    await api.TestOrder.insertOne({
+      name: 'test',
+      price: 1000,
+    });
+    const check = await api.TestOrder.insertOne({
+      name: 'test',
+      price: 1000,
+    });
+    expect(check?.id).toBe(2);
+  });
+  it('should insermany increment', async () => {
+    await api.TestOrder.deleteMany({});
+    {
+      const check = await api.TestOrder.insertMany([
+        { name: 'test', price: 1000 },
+        { name: 'test', price: 2000 },
+      ]);
+      expect(check).toBeTruthy();
+      expect(check?.[0].id).toBeTruthy();
+      expect(check?.[1].id).toBe(check![0].id + 1);
+    }
+    {
+      const check = await api.TestOrder.insertMany([
+        { name: 'test', price: 1000 },
+        { name: 'test', price: 2000 },
+      ]);
+      expect(check?.[0].id).toBeGreaterThan(3);
+      expect(check?.[1].id).toBe(check![0].id + 1);
+    }
   });
 }

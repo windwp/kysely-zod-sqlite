@@ -61,9 +61,7 @@ class FetchConnection implements DatabaseConnection {
       if (res?.ok) {
         const results = await res.json();
         return {
-          insertId: results.results?.lastInsertRowId
-            ? BigInt(results.results?.lastInsertRowId)
-            : undefined,
+          insertId: results.results?.lastInsertRowid,
           rows: results.results,
           batch: results.batch,
           numAffectedRows: results.results?.changes ?? undefined,

@@ -169,20 +169,21 @@ class BetterConnection implements DatabaseConnection {
 
     try {
       const results = handler(this.#db, body);
+      // skip Biginit now
       return Promise.resolve({
-        insertId: results.results?.lastInsertRowId
-          ? BigInt(results.results?.lastInsertRowId)
+        insertId: results.results?.lastInsertRowid
+          ? BigInt(results.results?.lastInsertRowid)
           : undefined,
         rows: results.results,
         numAffectedRows: results.results?.changes ?? undefined,
-      } as any);
+      });
     } catch (error: any) {
       this.#config.logger?.error('[SQL_ERROR=========================');
       this.#config.logger?.error(error.message);
       this.#config.logger?.error(body.sql);
       this.#config.logger?.error(body.parameters);
       this.#config.logger?.error('===================================]');
-      throw error
+      throw error;
     }
   }
 

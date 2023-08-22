@@ -11,15 +11,15 @@ export type DbConfig = {
 export type FetchConfig = {
   apiUrl: string;
   apiKey: string;
-  database: string;
+  database?: string;
   binding?: Fetcher;
   logger?: Logger;
   options?: ApiOptions;
 };
 export type ApiOptions = {
-  retry?: number;
   showSql?: boolean;
-  throwError?: boolean;
+  // retry?: number;
+  // throwError?: boolean;
 };
 
 export type OneActionBody =

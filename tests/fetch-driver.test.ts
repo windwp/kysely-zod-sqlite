@@ -9,9 +9,9 @@ import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
 import Database from 'better-sqlite3';
 
-loglevel.setLevel(loglevel.levels.DEBUG);
-
-const config = {};
+const config = {
+  logger: loglevel,
+};
 const api = new TestApi({
   config,
   schema: dbSchema,
@@ -27,7 +27,6 @@ const db = new Database(':memory:');
 
 global.fetch = vi.fn((_, options) => {
   try {
-    console.log('options?.body', options?.body);
     const data = handler(db, JSON.parse(options?.body as string));
     return Promise.resolve({
       json: () => new Promise(resolve => resolve(data)),

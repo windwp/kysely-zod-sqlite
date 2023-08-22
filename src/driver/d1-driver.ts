@@ -154,11 +154,7 @@ class D1Connection implements DatabaseConnection {
       const numAffectedRows =
         results.meta?.changes > 0 ? results.meta?.changes : undefined;
       return {
-        insertId:
-          results.meta.last_row_id === undefined ||
-          results.meta.last_row_id === null
-            ? undefined
-            : results.meta.last_row_id,
+        insertId: results.meta.last_row_id ?? undefined,
         rows: results.results || [],
         numAffectedRows,
       };
