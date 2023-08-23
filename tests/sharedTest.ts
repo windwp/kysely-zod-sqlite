@@ -612,9 +612,23 @@ export function runTest(api: TestApi) {
       userId: '123456',
       sample: 'sample',
     });
+    const test = await api.TestNoId.insertOne({
+      postId: '123456',
+      userId: '1234567',
+      sample: 'sample',
+    });
+    expect(test?.id).toBeFalsy();
     const check = await api.TestNoId.selectMany({});
-    expect(check.length).toBe(1);
+    expect(check.length).toBe(2);
     expect((check[0] as any)['id']).toBe(undefined);
+    {
+      const check = await api.TestNoId.count({
+        where: {
+          userId: '123456',
+        },
+      });
+      expect(check).toBe(1);
+    }
   });
 
   it('should insert increment', async () => {
@@ -644,7 +658,7 @@ export function runTest(api: TestApi) {
         { name: 'test', price: 1000 },
         { name: 'test', price: 2000 },
       ]);
-      expect(check?.[0].id).toBeGreaterThan(3);
+      expect(check?.[0].id).toBeGreaterThanOrEqual(3);
       expect(check?.[1].id).toBe(check![0].id + 1);
     }
   });

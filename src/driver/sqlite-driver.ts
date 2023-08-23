@@ -11,7 +11,7 @@ interface BettterDriverConfig {
   database: string;
   logger?: any;
 }
-export class BetterDriver implements Driver {
+export class BetterSqlite3Driver implements Driver {
   #config: BettterDriverConfig;
   #db: Database;
 

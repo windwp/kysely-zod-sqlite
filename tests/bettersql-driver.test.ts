@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { runTest } from './sharedTest';
 import { TestApi } from './TestApi';
-import { BetterDriver } from '../src/driver/sqlite-driver';
+import { BetterSqlite3Driver } from '../src/driver/sqlite-driver';
 import Database from 'better-sqlite3';
 import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
@@ -16,7 +16,7 @@ const config = {
 const api = new TestApi({
   config,
   schema: dbSchema,
-  driver: new BetterDriver(new Database(':memory:'), config),
+  driver: new BetterSqlite3Driver(new Database(':memory:'), config),
 });
 
 describe('BetterQqlite BetterSqliteApdater', () => {

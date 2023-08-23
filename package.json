@@ -1,13 +1,15 @@
 {
   "name": "kysely-zod-sqlite",
   "version": "1.1.1",
-  "description": "litte orm with kysely + zod for d1 sqlite",
+  "description": "extends kysely with zod to use cloudflare d1, sqlite",
   "main": "./dist/index.js",
   "type": "module",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "driver/**/*"
   ],
   "scripts": {
+    "prepack": "cp -r ./dist/driver ./driver",
     "build": "tsc --project tsconfig.build.json && npm run fix-esm-import-path",
     "fix-esm-import-path": "npx fix-esm-import-path ./dist/index.js && npx fix-esm-import-path ./dist/driver/*.js",
     "clean": "rm -rf ./dist/",
@@ -23,7 +25,7 @@
   },
   "license": "MIT",
   "author": {
-    "name": "Chanceseed",
+    "name": "chanceseed-com",
     "email": "chanceseed-com@users.noreply.github.com",
     "url": "https://github.com/chanceseed-com"
   },
@@ -33,17 +35,17 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js"
     },
-    "./dist/driver/sqlite-driver": {
+    "./driver/sqlite-driver": {
       "types": "./dist/driver/sqlite-driver.d.ts",
       "import": "./dist/driver/sqlite-driver.js",
       "require": "./dist/driver/sqlite-driver.js"
     },
-    "./dist/driver/fetch-driver": {
+    "./driver/fetch-driver": {
       "types": "./dist/driver/fetch-driver.d.ts",
       "import": "./dist/driver/fetch-driver.js",
       "require": "./dist/driver/fetch-driver.js"
     },
-    "./dist/driver/d1-driver": {
+    "./driver/d1-driver": {
       "types": "./dist/driver/d1-driver.d.ts",
       "import": "./dist/driver/d1-driver.js",
       "require": "./dist/driver/d1-driver.js"
@@ -53,13 +55,13 @@
     "node": ">=12.0"
   },
   "keywords": [
-    "boilerplate",
-    "template",
-    "typescript",
-    "vscode",
-    "commitizen",
-    "semantic-release",
-    "codecov"
+    "cloudflare",
+    "kysely",
+    "zod",
+    "prisma",
+    "edge",
+    "sqlite",
+    "typescript"
   ],
   "bugs": {
     "url": "https://github.com/chanceseed-com/kysey-zod-sqlite/issues"

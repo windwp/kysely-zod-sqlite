@@ -2,7 +2,6 @@ import {
   CompiledQuery,
   Driver,
   InsertQueryBuilder,
-  InsertResult,
   Kysely,
   RawBuilder,
   SelectQueryBuilder,
@@ -30,11 +29,11 @@ import type {
 } from './types';
 
 export class SqliteApi<
-  T extends { [key: string]: { id: string | number } | any }
+  Database extends Record<string, { id: string | number } | any>
 > {
-  readonly ky: Kysely<T>;
+  readonly ky: Kysely<Database>;
   readonly config: DbConfig | FetchConfig;
-  readonly schema: z.ZodObject<any, any, any, T>;
+  readonly schema: z.ZodObject<any, any, any, Database>;
 
   constructor({
     config,
@@ -43,11 +42,11 @@ export class SqliteApi<
   }: {
     config: DbConfig;
     driver: Driver;
-    schema: z.ZodObject<any, any, any, T>;
+    schema: z.ZodObject<any, any, any, Database>;
   }) {
     this.config = config;
     this.schema = schema;
-    this.ky = new Kysely<T>({
+    this.ky = new Kysely<Database>({
       dialect: {
         createAdapter: () => new SqliteAdapter(),
         createIntrospector: o => new SqliteIntrospector(o),
@@ -89,9 +88,11 @@ export class SqliteApi<
    * batchParams -order- is not automatic like what kysely does
    */
   async batchOneSmt<
-    V extends SelectQueryBuilder<T, any, any> | InsertQueryBuilder<T, any, any>
+    V extends
+      | SelectQueryBuilder<Database, any, any>
+      | InsertQueryBuilder<Database, any, any>
   >(
-    sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
+    sqlQuery: { compile: () => CompiledQuery<Database> } | RawBuilder<Database>,
     batchParams: Array<any[]>,
     opts?: ApiOptions
   ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
@@ -99,7 +100,7 @@ export class SqliteApi<
   }
 
   $batchOneSmt(
-    sqlQuery: { compile: () => CompiledQuery<T> } | RawBuilder<T>,
+    sqlQuery: { compile: () => CompiledQuery<Database> } | RawBuilder<Database>,
     batchParams: Array<any[]>
   ): OneActionBody {
     const query =
@@ -125,7 +126,7 @@ export class SqliteApi<
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
    */
   async batchAllSmt(
-    sqlQuerys: Array<{ compile: () => CompiledQuery<T> }>,
+    sqlQuerys: Array<{ compile: () => CompiledQuery<Database> }>,
     opts?: ApiOptions
   ) {
     const body = {
@@ -164,8 +165,8 @@ export class SqliteApi<
     operations: {
       [key in V]:
         | OneActionBody
-        | { compile: () => CompiledQuery<T> }
-        | RawBuilder<T>
+        | { compile: () => CompiledQuery<Database> }
+        | RawBuilder<Database>
         | undefined;
     },
     opts?: ApiOptions & { isTransaction: boolean }
@@ -176,7 +177,7 @@ export class SqliteApi<
       const value = operations[k as V];
       if (!value) return { key: k };
       if ((value as any).compile) {
-        const query: CompiledQuery<T> = (value as any).compile(this.ky);
+        const query: CompiledQuery<Database> = (value as any).compile(this.ky);
         const table = (query.query as any).from?.froms[0]?.table.identifier
           ?.name;
         return {
@@ -203,7 +204,7 @@ export class SqliteApi<
       data: data.rows,
       getOne: <X = any>(
         key: V,
-        table?: keyof T,
+        table?: keyof Database,
         extend?: ZodObject<any, any>
       ): X | undefined => {
         const v = data.rows.find(o => o.key === key);
@@ -231,7 +232,7 @@ export class SqliteApi<
 
   parseOne<X = any>(
     data: any,
-    table: keyof T,
+    table: keyof Database,
     extend?: ZodObject<any, any>
   ): X {
     let shape = this.schema?.shape[table]?.partial();
@@ -244,7 +245,7 @@ export class SqliteApi<
 
   parseMany<X = any>(
     data: any[],
-    table: keyof T,
+    table: keyof Database,
     extend?: ZodObject<any, any>
   ): X[] {
     let shape = this.schema?.shape[table]?.partial();
@@ -255,7 +256,7 @@ export class SqliteApi<
     return data.map(o => shape.parse(o)) as X[];
   }
 
-  table<K extends keyof T & string>(
+  table<K extends keyof Database & string>(
     tableName: K,
     opts?: {
       timeStamp?: boolean;
@@ -263,7 +264,7 @@ export class SqliteApi<
       autoIdFnc?: (tableName?: string) => string;
     }
   ) {
-    return new PTable<T[K], T>(
+    return new PTable<Database[K], Database>(
       this.ky,
       tableName,
       this.schema.shape[tableName],
@@ -355,20 +356,20 @@ function mappingRelations<V>(
 }
 
 /**
- * Api is inspire by Prisma
+ * Some shorcut query
  */
 export class PTable<
-  V extends { id: string | number },
-  T extends { [K in keyof T]: { id: string | number } }
+  Table extends { id: string | number },
+  Database extends { [K in keyof Database]: { id: string | number } }
 > {
   private timeStamp: boolean;
   private autoId: boolean;
   private autoIdFnc: (tableName?: string) => string;
   relations: { [k: string]: TableRelation };
   constructor(
-    private readonly ky: Kysely<T>,
-    private readonly table: keyof T & string,
-    public readonly schema?: ZodObject<any, any, any, T>,
+    private readonly ky: Kysely<Database>,
+    private readonly table: keyof Database & string,
+    public readonly schema?: ZodObject<any, any, any, Database>,
     opts?: {
       timeStamp?: boolean;
       autoId?: boolean;
@@ -396,24 +397,11 @@ export class PTable<
     }
   }
 
-  selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
-    return this.$selectById(id, select).executeTakeFirst() as Promise<
-      V | undefined
-    >;
+  selectMany(opts: QueryRelations<Table>) {
+    return this.$selectMany(opts).execute() as Promise<Table[]>;
   }
 
-  $selectById(id: string, select?: Readonly<{ [k in keyof V]?: boolean }>) {
-    return this.$selectFirst({
-      where: { id } as QueryWhere<V>,
-      select,
-    });
-  }
-
-  selectMany(opts: QueryRelations<V>) {
-    return this.$selectMany(opts).execute() as Promise<V[]>;
-  }
-
-  $selectMany(opts: QueryRelations<V>) {
+  $selectMany(opts: QueryRelations<Table>) {
     let query = this.ky.selectFrom(this.table);
     query = mappingQueryOptions(query, opts);
     if (this.relations)
@@ -421,45 +409,26 @@ export class PTable<
     return query;
   }
 
-  selectFirst(opts: QueryRelations<V>) {
+  selectFirst(opts: QueryRelations<Table>) {
     opts.take = 1;
-    return this.$selectMany(opts).executeTakeFirst() as Promise<V | undefined>;
+    return this.$selectMany(opts).executeTakeFirst() as Promise<
+      Table | undefined
+    >;
   }
 
-  $selectFirst(opts: QueryRelations<V>) {
+  $selectFirst(opts: QueryRelations<Table>) {
     opts.take = 1;
     return this.$selectMany(opts);
   }
 
-  async updateById(
-    id: string,
-    value: Partial<V>
-  ): Promise<{
-    numUpdatedRows: bigint;
-    numChangedRows?: bigint;
-  }> {
-    if (value.id) delete value.id;
-    return await this.$updateById(id, value).executeTakeFirst();
-  }
-
-  $updateById(id: string, value: Partial<V>) {
-    if (this.timeStamp) {
-      (value as any).updatedAt = new Date();
-    }
-    return this.ky
-      .updateTable(this.table)
-      .where('id', '=', id as any)
-      .set(value as any);
-  }
-
-  updateMany(opts: Query<V> & { data: Partial<V> }): Promise<{
+  updateMany(opts: Query<Table> & { data: Partial<Table> }): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
     return this.$updateMany(opts).executeTakeFirst();
   }
 
-  $updateMany(opts: Query<V> & { data: Partial<V> }) {
+  $updateMany(opts: Query<Table> & { data: Partial<Table> }) {
     let query = this.ky.updateTable(this.table);
     query = mappingQueryOptions(query, opts, false);
     if (this.timeStamp) {
@@ -468,14 +437,14 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  async updateOne(opts: Query<V> & { data: Partial<V> }): Promise<{
+  async updateOne(opts: Query<Table> & { data: Partial<Table> }): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
     return await this.$updateOne(opts).executeTakeFirst();
   }
 
-  $updateOne(opts: Query<V> & { data: Partial<V> }) {
+  $updateOne(opts: Query<Table> & { data: Partial<Table> }) {
     let query = this.ky.updateTable(this.table);
     if (this.timeStamp) {
       (opts.data as any).updatedAt = new Date();
@@ -490,19 +459,19 @@ export class PTable<
   }
 
   async insertOne(
-    value: Partial<V>
-  ): Promise<Partial<V & { id: string | number }> | undefined> {
+    value: Partial<Table>
+  ): Promise<(Partial<Table> & { id: Table['id'] }) | undefined> {
     const check = (await this.$insertOne(value).executeTakeFirst()) as any;
     if (check?.numInsertedOrUpdatedRows == 1) {
-      if (!this.autoId && check.insertId) {
+      if (!this.autoId && check.insertId && this.schema?.shape['id']) {
         value.id = Number(check.insertId);
       }
-      return value as Partial<V> & { id: string | number };
+      return value as Partial<Table> & { id: Table['id'] };
     }
     return undefined;
   }
 
-  $insertOne(value: Partial<V>) {
+  $insertOne(value: Partial<Table>) {
     if (!value.id && this.autoId) value.id = this.autoIdFnc();
     if (this.timeStamp) {
       // @ts-ignore
@@ -517,12 +486,12 @@ export class PTable<
    * It use for a non unique key if a key is unique use InsertConflict
    */
   async upsert(opts: {
-    data: Partial<V> & { id?: V['id'] };
-    where?: QueryWhere<V>;
-  }): Promise<Partial<V> | undefined> {
+    data: Partial<Table> & { id?: Table['id'] };
+    where?: QueryWhere<Table>;
+  }): Promise<Partial<Table> | undefined> {
     if (opts.data.id) {
       await this.updateOne({
-        where: { id: opts.data.id, ...opts.where } as QueryWhere<V>,
+        where: { id: opts.data.id, ...opts.where } as QueryWhere<Table>,
         data: opts.data,
       });
       return opts.data as any;
@@ -543,9 +512,9 @@ export class PTable<
 
   /** conflicts columns should be a unique or primary key */
   async insertConflict(opts: {
-    create: Partial<V>;
-    update: Partial<V>;
-    conflicts: Array<keyof V & string>;
+    create: Partial<Table>;
+    update: Partial<Table>;
+    conflicts: Array<keyof Table & string>;
   }) {
     await this.$insertConflict(opts).execute();
     return opts.create;
@@ -557,9 +526,9 @@ export class PTable<
     update,
     conflicts,
   }: {
-    create: Partial<V>;
-    update: Partial<V>;
-    conflicts: Array<keyof V & string>;
+    create: Partial<Table>;
+    update: Partial<Table>;
+    conflicts: Array<keyof Table & string>;
   }) {
     if (!create.id && this.autoId) create.id = this.autoIdFnc();
     return this.ky
@@ -570,7 +539,9 @@ export class PTable<
       );
   }
 
-  async insertMany(values: Array<Partial<V>>): Promise<V[] | undefined> {
+  async insertMany(
+    values: Array<Partial<Table>>
+  ): Promise<Table[] | undefined> {
     const check = await this.$insertMany(values).executeTakeFirst();
     if (check?.numInsertedOrUpdatedRows == BigInt(values.length)) {
       if (!this.autoId) {
@@ -579,12 +550,12 @@ export class PTable<
           o.id = Number(check.insertId) - values.length + index + 1;
         });
       }
-      return values as V[];
+      return values as Table[];
     }
     return undefined;
   }
 
-  $insertMany(values: Array<Partial<V>>) {
+  $insertMany(values: Array<Partial<Table>>) {
     values.forEach((o: any) => {
       if (!o.id && this.autoId) o.id = this.autoIdFnc();
       if (this.timeStamp) {
@@ -595,31 +566,71 @@ export class PTable<
     return this.ky.insertInto(this.table).values(values as any);
   }
 
-  async deleteById(id: string): Promise<{ numDeletedRows: BigInt }> {
-    return await this.$deleteById(id).executeTakeFirst();
-  }
-
-  $deleteById(id: string) {
-    return this.ky.deleteFrom(this.table).where('id', '=', id as any);
-  }
-
   async deleteMany(opts: {
-    where?: QueryWhere<V>;
+    where?: QueryWhere<Table>;
   }): Promise<{ numDeletedRows: BigInt }> {
     return await this.$deleteMany(opts).executeTakeFirst();
   }
 
-  $deleteMany({ where }: { where?: QueryWhere<V> }) {
+  $deleteMany({ where }: { where?: QueryWhere<Table> }) {
     let query = this.ky.deleteFrom(this.table);
     query = mappingQueryOptions(query, { where }, false);
     return query;
   }
 
-  async count({ where }: { where: QueryWhere<V> }): Promise<number> {
+  async count({ where }: { where?: QueryWhere<Table> }): Promise<number> {
     let query = this.ky.selectFrom(this.table);
-    query = query.select(eb => eb.fn.count('id').as('count'));
+    query = query.select(eb => eb.fn.countAll().as('count'));
     query = mappingQueryOptions(query, { where }, false);
     const data: any = await query.executeTakeFirst();
     return data?.count;
+  }
+
+  selectById(
+    id: Table['id'],
+    select?: Readonly<{ [k in keyof Table]?: boolean }>
+  ) {
+    return this.$selectById(id, select).executeTakeFirst() as Promise<
+      Table | undefined
+    >;
+  }
+
+  $selectById(
+    id: Table['id'],
+    select?: Readonly<{ [k in keyof Table]?: boolean }>
+  ) {
+    return this.$selectFirst({
+      where: { id } as QueryWhere<Table>,
+      select,
+    });
+  }
+
+  async updateById(
+    id: Table['id'],
+    value: Partial<Table>
+  ): Promise<{
+    numUpdatedRows: bigint;
+    numChangedRows?: bigint;
+  }> {
+    if (value.id) delete value.id;
+    return await this.$updateById(id, value).executeTakeFirst();
+  }
+
+  $updateById(id: Table['id'], value: Partial<Table>) {
+    if (this.timeStamp) {
+      (value as any).updatedAt = new Date();
+    }
+    return this.ky
+      .updateTable(this.table)
+      .where('id', '=', id as any)
+      .set(value as any);
+  }
+
+  async deleteById(id: Table['id']): Promise<{ numDeletedRows: BigInt }> {
+    return await this.$deleteById(id).executeTakeFirst();
+  }
+
+  $deleteById(id: Table['id']) {
+    return this.ky.deleteFrom(this.table).where('id', '=', id as any);
   }
 }
