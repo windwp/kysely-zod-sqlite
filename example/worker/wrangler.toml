@@ -1,0 +1,8 @@
+name = "kysely-worker-example"
+main = "src/worker.ts"
+compatibility_date = "2023-08-21"
+
+[[ d1_databases ]]
+binding = "D1_DB"
+database_name = "d1_db"
+database_id = "your-id"
