@@ -73,7 +73,7 @@ export class SqliteApi<
     sqlQuery: RawBuilder<T> | { compile: () => CompiledQuery<T> },
     action: 'run' | 'selectAll' | 'selectFirst' = 'run',
     opts?: ApiOptions
-  ): Promise<{ changes: number; lastInsertRowId: number }> {
+  ): Promise<{ changes: number; lastInsertRowId: number; rows: T[] }> {
     const query = sqlQuery.compile(this.ky);
     const body: DataBody = {
       action: action,
