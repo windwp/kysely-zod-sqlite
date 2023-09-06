@@ -105,10 +105,7 @@ export class SqliteApi<
     sqlQuery: { compile: () => CompiledQuery<Database> } | RawBuilder<Database>,
     batchParams: Array<any[]>
   ): OneActionBody {
-    const query =
-      sqlQuery instanceof RawBuilder
-        ? sqlQuery.compile(this.ky)
-        : sqlQuery.compile();
+    const query = sqlQuery.compile(this.ky);
     batchParams.forEach(o => {
       if (Array.isArray(o)) {
         o.forEach((v, index) => {
@@ -274,8 +271,8 @@ export class SqliteApi<
     );
   }
 
-  /** 
-   * extend the origin schema with a custom runtime schema 
+  /**
+   * extend the origin schema with a custom runtime schema
    * for create a new api instance
    **/
   extendSchema<T extends Record<string, ZodObject<any, any, any>>>(schema: T) {
