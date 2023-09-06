@@ -126,8 +126,7 @@
   "dependencies": {
     "date-fns": "^2.30.0",
     "import": "^0.0.6",
-    "kysely": "^0.26.1",
-    "kysely-plugin-serialize": "^0.3.4",
+    "kysely": "^0.26.3",
     "loglevel": "^1.8.1",
     "superjson": "^1.12.1",
     "type-fest": "^3.11.0",
@@ -157,6 +156,6 @@
     "semantic-release": "^21.0.1",
     "ts-node": "^10.2.1",
     "typescript": "^5.0.2",
-    "vitest": "^0.33.0"
+    "vitest": "^0.34.3"
   }
 }

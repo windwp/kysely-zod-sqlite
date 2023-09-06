@@ -1,15 +1,16 @@
 # Feature 
+An flexible api for Cloudflare D1 and sqlite.
 It has an simple api of Prisma and a powerful query with Kysely.
-It focuses on working with Cloudflare D1 and SQLite.
 
-- [x] parse query data by zod (for json string, boolean and datetime) 
+- [x] parse model by zod (for json string, boolean and datetime) 
 - [x] remote proxy call from your app to worker or between worker by binding service
 - [x] api like primsa (support 1 level relation)
-- [x] unit testing on local.
--
+- [x] unit testing D1 on local.
+
 # Usage
 ### Define zod schema
-Define zod and use it for kysely model, this zod schema can be reuse on trpc with router
+Define zod and use it for kysely model. Schema can be reuse on trpc router
+
 ``` typescript 
 import {
   zBoolean,
@@ -23,11 +24,11 @@ export const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().optional(),
-  data: zJsonObject<UserData>(),  // It parse json only
+  data: zJsonObject<UserData>(),  // It use Json.parse
   config: zJsonSchema(z.object({
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
-  })), // It parse by zod schema
+  })), // zod schema to parse
   createdAt: zDate, // parse sqlite date
   updatedAt: zDate,
   isDelete: zBoolean, // parse boolean 1,0
@@ -105,7 +106,7 @@ await api.TestUser.updateOne({
   data: { name: 'test' },
 });
 ```
-If you want do a complex query you can use kysely query
+If you want to write a complex query you can use kysely
 ```typescript
 const data = await api.ky // this is a reference of kysely builder
     .selectFrom('TestPost')
@@ -164,7 +165,13 @@ const api = new TestApi({
 ```
 ### Support batch
 ```typescript
-// run one query with multiple value
+
+// raw sql query 
+await api.batchOneSmt(
+  sql`update TestUser set name = ? where id = ?`, 
+  [ ['aaa', 'id1'], ['bbb', 'id2'], ]
+);
+// run kysely query with multiple value
 const check = await api.batchOneSmt(
     api.ky
       .updateTable('TestUser')
@@ -173,11 +180,6 @@ const check = await api.batchOneSmt(
       })
       .where('name', '=', '?'),
     [ ['aaa', 'user0'], ['bbb', 'user1'], ]
-);
-// you an raw sql query 
-await api.batchOneSmt(
-  sql`update TestUser set name = ? where id = ?`, 
-  [ ['aaa', 'id1'], ['bbb', 'id2'], ]
 );
 // run multiple query on batch
 const result = await api.batchAllSmt([
@@ -189,7 +191,7 @@ const result = await api.batchAllSmt([
     isPublished: true,
     userId: userArr[0].id,
   }),
-  api.TestUser.$selectMany({  // prisma query (add $ before select)
+  api.TestUser.$selectMany({  // prisma syntax (add $ before select)
       take: 10,
       include: {
         posts: true,
@@ -216,10 +218,11 @@ const check = await api.bulk({
     userId: userArr[0].id,
   }),
 });
-// use key value not index number
+// It use key value to retrieve result
 const allUser = check.getMany<UserTable>('allUser'); 
 const allUser = check.getOne<any>('insert'); 
-// all prisma query can use on bulk too. You can run batchOneSmt inside bulk 🥰
+
+//prisma query can use on bulk too. You can even run batch inside of bulk 🥰
 const check = await api.bulk({
   user: api.$batchOneSmt(
     api.ky
@@ -245,8 +248,12 @@ const check = await api.bulk({
 });
 ```
 # FAQ
-### parse custom schema on query with join
-by default when you use join on select query It will not automatic parse by zod
+
+### Is that libary is a ORM?
+No, It just a wrapper around kysely with a parser model from zod.
+
+### Parse custom schema on query with join
+By default when you use any join select query. It is not automatic parse by zod
 you can use that method to do it.
 ```typescript
 api.parseMany<UserTable & { dynamic: number }>(

@@ -92,6 +92,12 @@ export function runTest(api: TestApi) {
       .addColumn('name', 'text')
       .addColumn('price', 'integer')
       .execute();
+    await api.ky.schema
+      .createTable('TestExtend')
+      .ifNotExists()
+      .addColumn('id', 'integer', col => col.autoIncrement().primaryKey())
+      .addColumn('name', 'text')
+      .execute();
   });
   beforeEach(async () => {
     const data = await textFixture(api);
@@ -661,5 +667,20 @@ export function runTest(api: TestApi) {
       expect(check?.[0].id).toBeGreaterThanOrEqual(3);
       expect(check?.[1].id).toBe(check![0].id + 1);
     }
+  });
+  it('should have ability to extend', async () => {
+    const extendApi = api.extendSchema({
+      TestExtend: z.object({
+        id: z.number().optional(),
+        name: z.string(),
+      }),
+    });
+    const check = await extendApi.ky
+      .insertInto('TestExtend')
+      .values({
+        name: 'testextend',
+      })
+      .executeTakeFirst();
+    expect(check?.insertId).toBeTruthy()
   });
 }

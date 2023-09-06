@@ -9,7 +9,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import { ZodAny, ZodObject, z } from 'zod';
+import { TypeOf, ZodAny, ZodObject, z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
@@ -34,6 +34,7 @@ export class SqliteApi<
   readonly ky: Kysely<Database>;
   readonly config: DbConfig | FetchConfig;
   readonly schema: z.ZodObject<any, any, any, Database>;
+  readonly driver: Driver;
 
   constructor({
     config,
@@ -46,6 +47,7 @@ export class SqliteApi<
   }) {
     this.config = config;
     this.schema = schema;
+    this.driver = driver;
     this.ky = new Kysely<Database>({
       dialect: {
         createAdapter: () => new SqliteAdapter(),
@@ -271,6 +273,18 @@ export class SqliteApi<
       opts
     );
   }
+
+  /** 
+   * extend the origin schema with a custom runtime schema 
+   * for create a new api instance
+   **/
+  extendSchema<T extends Record<string, ZodObject<any, any, any>>>(schema: T) {
+    return new SqliteApi({
+      config: this.config,
+      schema: this.schema.extend(schema),
+      driver: this.driver,
+    }) as unknown as SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }>;
+  }
 }
 
 function mappingQueryOptions<V>(
@@ -366,7 +380,7 @@ export class PTable<
   constructor(
     private readonly ky: Kysely<Database>,
     private readonly table: keyof Database & string,
-    public readonly schema?: ZodObject<any, any, any, Database>,
+    public readonly schema?: ZodObject<any, any>,
     opts?: {
       timeStamp?: boolean;
       autoId?: boolean;
