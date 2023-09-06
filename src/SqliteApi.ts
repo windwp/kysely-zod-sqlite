@@ -85,7 +85,7 @@ export class SqliteApi<
    * only working cloudflare D1 and sqlite
    * use this api to execute one sql query with multiple parameters
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
-   * batchParams -order- is not automatic like what kysely does
+   * @param batchParams  order of params is not automatic like what kysely does
    */
   async batchOneSmt<
     V extends
@@ -297,14 +297,11 @@ function mappingQueryOptions<V>(
           Object.values(opts.where[key] as any)[0]
         );
       } else {
-        if (opts.where[key] == undefined || opts.where[key] == null) {
-          opts.where[key] = '<------ Error' as any;
+        if (opts.where[key] === undefined || opts.where[key] === null) {
+          const cl: any = structuredClone(opts.where);
+          cl[key] = '<------ Error';
           throw new Error(
-            `select value of '${key}' is null ${JSON.stringify(
-              opts.where,
-              null,
-              2
-            )}`
+            `select value of '${key}' is null ${JSON.stringify(cl, null, 2)}`
           );
         }
         query = query.where(key, '=', opts.where[key]);
@@ -364,7 +361,7 @@ export class PTable<
 > {
   private timeStamp: boolean;
   private autoId: boolean;
-  private autoIdFnc: (tableName?: string) => string;
+  private autoIdFnc: (tableName: string, value: Partial<Table>) => string;
   relations: { [k: string]: TableRelation };
   constructor(
     private readonly ky: Kysely<Database>,
@@ -373,7 +370,7 @@ export class PTable<
     opts?: {
       timeStamp?: boolean;
       autoId?: boolean;
-      autoIdFnc?: (tableName?: string) => string;
+      autoIdFnc?: (tableName: string, value: Partial<Table>) => string;
     }
   ) {
     this.schema = schema;
@@ -472,7 +469,7 @@ export class PTable<
   }
 
   $insertOne(value: Partial<Table>) {
-    if (!value.id && this.autoId) value.id = this.autoIdFnc();
+    if (!value.id && this.autoId) value.id = this.autoIdFnc(this.table, value);
     if (this.timeStamp) {
       // @ts-ignore
       if (!value.createdAt) value.createdAt = new Date();
@@ -496,7 +493,7 @@ export class PTable<
       });
       return opts.data as any;
     }
-    opts.data.id = this.autoIdFnc();
+    opts.data.id = this.autoIdFnc(this.table, opts.data);
     if (!opts.where) {
       await this.insertOne(opts.data);
       return opts.data as any;
@@ -530,7 +527,8 @@ export class PTable<
     update: Partial<Table>;
     conflicts: Array<keyof Table & string>;
   }) {
-    if (!create.id && this.autoId) create.id = this.autoIdFnc();
+    if (!create.id && this.autoId)
+      create.id = this.autoIdFnc(this.table, create);
     return this.ky
       .insertInto(this.table)
       .values(create as any)
@@ -557,7 +555,7 @@ export class PTable<
 
   $insertMany(values: Array<Partial<Table>>) {
     values.forEach((o: any) => {
-      if (!o.id && this.autoId) o.id = this.autoIdFnc();
+      if (!o.id && this.autoId) o.id = this.autoIdFnc(this.table, o);
       if (this.timeStamp) {
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();

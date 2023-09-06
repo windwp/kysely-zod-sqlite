@@ -27,7 +27,7 @@ export const userSchema = z.object({
   config: zJsonSchema(z.object({
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
-  })), // It parse zod schema
+  })), // It parse by zod schema
   createdAt: zDate, // parse sqlite date
   updatedAt: zDate,
   isDelete: zBoolean, // parse boolean 1,0
@@ -115,7 +115,7 @@ const data = await api.ky // this is a reference of kysely builder
     .execute();
 ```
 ## Driver
-you can change the driver for different enviroment by inject a different driver when you setup
+you can change the driver for different enviroment by inject a different driver on setup
 ### Local enviroment and unit test
 ```typescript
 const api = new TestApi({
@@ -132,7 +132,7 @@ const api = new TestApi({
   driver: new D1Driver(env.D1_DB, config),
 });
 ```
-### working outside worker and pages
+### working outside cloudflare worker, pages
 You need to deploy a custom worker then you can connect to it on your app
 [worker remote](./example/worker/src/worker.ts)
 ```typescript
@@ -147,7 +147,7 @@ const api = new TestApi({
   }),
 });
 ```
-### call from pages to worker or from worker to worker
+### call from cloudflare pages to worker or from worker to worker
 ```typescript
 const api = new TestApi({
   config,
