@@ -14,6 +14,12 @@ describe('test custom zod ', () => {
       });
       expect(typeof v.startDate?.getTime()).toBe('number');
     }
+    {
+      const v = testZod.parse({
+        startDate: null,
+      });
+      expect(v.startDate).toBe(undefined);
+    }
   });
   it('should handle custom boolean', async () => {
     const boo = zBoolean();
@@ -26,7 +32,7 @@ describe('test custom zod ', () => {
       expect(v).toBe(false);
     }
   });
-  it('should  handle json', async () => {
+  it('should handle json', async () => {
     const testjson = z.object({
       data: zJsonObject<{ config: string; value: string }>(),
     });

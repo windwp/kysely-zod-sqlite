@@ -105,6 +105,11 @@ export function zRelationMany<T>(
 
 export class ZodKyDate extends ZodDate {
   _parse(input: ParseInput) {
+    // temporary do this
+    if (!input.data) {
+      input.data = undefined;
+      return OK(input.data);
+    }
     if (typeof input.data === 'string') {
       if ((input.data as string).length == 24) {
         input.data = parseISO(input.data);
