@@ -21,18 +21,18 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string().optional(),
   data: zJsonObject<UserData>(),
-  createdAt: zDate,
-  updatedAt: zDate,
+  createdAt: zDate(),
+  updatedAt: zDate(),
 });
 
 export const postSchema = z.object({
   id: z.string(),
   name: z.string(),
   userId: z.string(),
-  isPublished: zBoolean,
+  isPublished: zBoolean(),
   data: z.string(),
-  createdAt: zDate,
-  updatedAt: zDate,
+  createdAt: zDate(),
+  updatedAt: zDate(),
 });
 
 export const postRelationSchema = postSchema.extend({
