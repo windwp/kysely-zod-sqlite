@@ -551,6 +551,7 @@ export class PTable<
   async insertMany(
     values: Array<Partial<Table>>
   ): Promise<Table[] | undefined> {
+    if (values.length == 0) return [];
     const check = await this.$insertMany(values).executeTakeFirst();
     if (check?.numInsertedOrUpdatedRows == BigInt(values.length)) {
       if (!this.autoId) {
