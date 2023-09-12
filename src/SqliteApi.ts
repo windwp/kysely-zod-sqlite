@@ -644,3 +644,9 @@ export class PTable<
     return this.ky.deleteFrom(this.table).where('id', '=', id as any);
   }
 }
+
+export type InferFromSqlApi<T> = T extends SqliteApi<infer K>
+  ? K extends Record<string, any>
+    ? K
+    : never
+  : never;
