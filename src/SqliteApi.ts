@@ -275,12 +275,28 @@ export class SqliteApi<
    * extend the origin schema with a custom runtime schema
    * for create a new api instance
    **/
-  extendSchema<T extends Record<string, ZodObject<any, any, any>>>(schema: T) {
-    return new SqliteApi({
+  extendSchema<
+    T extends Record<string, ZodObject<any, any, any>>,
+    ExtendApi extends {
+      [key: string]: (
+        api: SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }>
+      ) => PTable<any, any>;
+    }
+  >(schema: T, extendApi?: ExtendApi) {
+    const api = new SqliteApi({
       config: this.config,
       schema: this.schema.extend(schema),
       driver: this.driver,
     }) as unknown as SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }>;
+
+    if (extendApi) {
+      for (const key in extendApi) {
+        (api as any)[key] = extendApi[key](api);
+      }
+    }
+    return api as SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }> & {
+      [key in keyof ExtendApi]: ReturnType<ExtendApi[key]>;
+    };
   }
 }
 

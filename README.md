@@ -119,6 +119,7 @@ const data = await api.ky // this is a reference of kysely builder
 you can change the driver for different enviroment by inject a different driver on setup
 ### Local enviroment and unit test
 ```typescript
+import { BetterSqlite3Driver } from 'kysely-zod-sqlite/driver/sqlite-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
@@ -127,6 +128,7 @@ const api = new TestApi({
 ```
 ### working inside worker and pages
 ```typescript
+import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
@@ -137,6 +139,7 @@ const api = new TestApi({
 You need to deploy a custom worker then you can connect to it on your app
 [worker remote](./example/worker/src/worker.ts)
 ```typescript
+import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
@@ -150,6 +153,7 @@ const api = new TestApi({
 ```
 ### call from cloudflare pages to worker or from worker to worker
 ```typescript
+import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,

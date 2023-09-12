@@ -105,7 +105,6 @@ export function zRelationMany<T>(
 
 export class ZodKyDate extends ZodDate {
   _parse(input: ParseInput) {
-    // temporary do this
     if (!input.data) {
       input.data = undefined;
       return OK(input.data);
@@ -156,7 +155,7 @@ export const zDate = () =>
     coerce: false,
     checks: [],
     typeName: ZodFirstPartyTypeKind.ZodDate,
-  });
+  }).optional();
 
 export function zJsonObject<T extends Record<string, any>>() {
   const v = new ZodKyJsonString<

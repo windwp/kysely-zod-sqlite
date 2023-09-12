@@ -20,6 +20,7 @@ async function textFixture(api: TestApi) {
         name: `name${i}`,
         o: { a: i },
       },
+      createdAt: new Date(),
       updatedAt: startOfDay(addDays(new Date(), i)),
     };
   });
@@ -141,6 +142,7 @@ export function runTest(api: TestApi) {
             a: 10,
           },
         },
+        createdAt: new Date(),
         updatedAt: new Date(),
       })
       .executeTakeFirst();
@@ -669,18 +671,31 @@ export function runTest(api: TestApi) {
     }
   });
   it('should have ability to extend', async () => {
-    const extendApi = api.extendSchema({
-      TestExtend: z.object({
-        id: z.number().optional(),
-        name: z.string(),
-      }),
-    });
-    const check = await extendApi.ky
-      .insertInto('TestExtend')
-      .values({
-        name: 'testextend',
-      })
-      .executeTakeFirst();
-    expect(check?.insertId).toBeTruthy()
+    const extendApi = api.extendSchema(
+      {
+        TestExtend: z.object({
+          id: z.number().optional(),
+          name: z.string(),
+        }),
+      },
+      {
+        testExtend: o => o.table('TestExtend'),
+      }
+    );
+    {
+      const check = await extendApi.ky
+        .insertInto('TestExtend')
+        .values({
+          name: 'testextend',
+        })
+        .executeTakeFirst();
+      expect(check?.insertId).toBeTruthy();
+    }
+    {
+      const check = await extendApi.testExtend.selectFirst({
+        where: { name: 'testextend' },
+      });
+      expect(check?.id).toBeTruthy();
+    }
   });
 }
