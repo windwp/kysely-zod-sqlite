@@ -10,7 +10,7 @@ import {
   SqliteQueryCompiler,
 } from 'kysely';
 import { TypeOf, ZodAny, ZodObject, z } from 'zod';
-import { jsonArrayFrom, jsonObjectFrom } from './helpers/sqlite';
+import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
@@ -272,8 +272,20 @@ export class SqliteApi<
   }
 
   /**
-   * extend the origin schema with a custom runtime schema
-   * for create a new api instance
+   * extend the origin zod schema with a new runtime schema
+   *
+   * ```typescript 
+   * const extendApi = api.extendSchema(
+   *   {
+   *     Log: z.object({
+   *       id: z.number().optional(),
+   *       name: z.string(),
+   *     }),
+   *   },
+   *   { // new table log
+   *     log: o => o.table('Log'),
+   *   })
+   * ```
    **/
   extendSchema<
     T extends Record<string, ZodObject<any, any, any>>,
