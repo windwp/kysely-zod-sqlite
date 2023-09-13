@@ -48,7 +48,11 @@ export class SqliteApi<
     this.config = config;
     this.schema = schema;
     this.driver = driver;
-    this.ky = new Kysely<Database>({
+    this.ky = this.initKysely(this.driver);
+  }
+
+  private initKysely(driver: Driver) {
+    return new Kysely<Database>({
       dialect: {
         createAdapter: () => new SqliteAdapter(),
         createIntrospector: o => new SqliteIntrospector(o),
@@ -57,8 +61,8 @@ export class SqliteApi<
       },
       plugins: [
         new SqliteSerializePlugin({
-          schema: schema?.shape,
-          logger: config.logger,
+          schema: this.schema?.shape,
+          logger: this.config.logger,
         }),
       ],
     });
@@ -260,11 +264,13 @@ export class SqliteApi<
     opts?: {
       timeStamp?: boolean;
       autoId?: boolean;
+      driver?: Driver;
       autoIdFnc?: (tableName?: string) => string;
     }
   ) {
-    return new PTable<Database[K], Database>(
-      this.ky,
+    const ky = opts?.driver ? this.initKysely(opts?.driver) : this.ky;
+    return new PTable<Database[K], Pick<Database, K>>(
+      ky as any,
       tableName,
       this.schema.shape[tableName],
       opts
@@ -272,22 +278,23 @@ export class SqliteApi<
   }
 
   /**
-   * extend the origin zod schema with a new runtime schema
+   * extend the origin zod schema
+   * it similar to withTables onkysely
    *
-   * ```typescript 
-   * const extendApi = api.extendSchema(
+   * ```typescript
+   * const extendApi = api.withTables(
    *   {
-   *     Log: z.object({
+   *     NewTable: z.object({
    *       id: z.number().optional(),
    *       name: z.string(),
    *     }),
    *   },
-   *   { // new table log
-   *     log: o => o.table('Log'),
+   *   { // option
+   *     newTable: o => o.table('NewTable'),
    *   })
    * ```
    **/
-  extendSchema<
+  withTables<
     T extends Record<string, ZodObject<any, any, any>>,
     ExtendApi extends {
       [key: string]: (
@@ -377,7 +384,8 @@ function mappingRelations<V>(
           'you need input schema for table or define a column to select '
         );
       }
-      const fncJson = relation.type == 'one' ? jsonObjectFrom : jsonArrayFrom;
+      const fncJson: any =
+        relation.type == 'one' ? jsonObjectFrom : jsonArrayFrom;
       query = query.select((eb: any) => [
         fncJson(
           eb
@@ -403,7 +411,7 @@ export class PTable<
   private autoIdFnc: (tableName: string, value: Partial<Table>) => string;
   relations: { [k: string]: TableRelation };
   constructor(
-    private readonly ky: Kysely<Database>,
+    public readonly ky: Kysely<Database>,
     private readonly table: keyof Database & string,
     public readonly schema?: ZodObject<any, any>,
     opts?: {
@@ -497,8 +505,8 @@ export class PTable<
   async insertOne(
     value: Partial<Table>
   ): Promise<(Partial<Table> & { id: Table['id'] }) | undefined> {
-    const check = (await this.$insertOne(value).executeTakeFirst()) as any;
-    if (check?.numInsertedOrUpdatedRows == 1) {
+    const check = await this.$insertOne(value).executeTakeFirst();
+    if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
       if (!this.autoId && check.insertId && this.schema?.shape['id']) {
         value.id = Number(check.insertId);
       }
@@ -530,12 +538,12 @@ export class PTable<
         where: { id: opts.data.id, ...opts.where } as QueryWhere<Table>,
         data: opts.data,
       });
-      return opts.data as any;
+      return opts.data;
     }
     opts.data.id = this.autoIdFnc(this.table, opts.data);
     if (!opts.where) {
       await this.insertOne(opts.data);
-      return opts.data as any;
+      return opts.data;
     }
 
     const check = await this.selectFirst(opts);

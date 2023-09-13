@@ -169,7 +169,6 @@ class BetterConnection implements DatabaseConnection {
 
     try {
       const results = handler(this.#db, body);
-      // skip Biginit now
       return Promise.resolve({
         insertId: results.results?.lastInsertRowid
           ? BigInt(results.results?.lastInsertRowid)

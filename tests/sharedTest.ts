@@ -671,7 +671,7 @@ export function runTest(api: TestApi) {
     }
   });
   it('should have ability to extend', async () => {
-    const extendApi = api.extendSchema(
+    const extendApi = api.withTables(
       {
         TestExtend: z.object({
           id: z.number().optional(),

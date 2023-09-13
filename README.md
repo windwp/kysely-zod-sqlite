@@ -161,15 +161,42 @@ const api = new TestApi({
     apiKey: 'test',
     apiUrl: 'https://{worker}.pages.dev',
     database: 'Test',
-    bindingService:env.WORKER_BINDING,
+    bindingService: env.WORKER_BINDING,
     // it will use env.WORKER_BINDING.fetch not a global fetch
     logger: loglevel,
   }),
 });
 ```
+### multiple driver per table
+```typescript
+export class TestApi extends SqliteApi<Database> {
+  //... another table use a default driver
+
+  get TestLog(){
+    return this.table('TestLog',{ driver: new FetchDriver(...)});
+  }
+}
+// dynamic add schema and driver 
+const api = new TestApi(...)
+
+const extendApi = api.withTables(
+  {
+    TestExtend: z.object({
+      id: z.number().optional(),
+      name: z.string(),
+    }),
+  },
+  { testExtend: o => o.table('TestExtend',{driver: new D1Driver(...)}),}
+);
+
+const check = await extendApi.testExtend.selectFirst({
+  where: { name: 'testextend' },
+});
+
+```
+
 ### Support batch
 ```typescript
-
 // raw sql query 
 await api.batchOneSmt(
   sql`update TestUser set name = ? where id = ?`, 
@@ -213,7 +240,8 @@ working with array on batch method is difficult when you run query depend on som
 so I create bulk
 ```typescript
 const check = await api.bulk({
-  allUser: isAdmin ? api.ky.selectFrom('TestUser').selectAll(): undefined;
+  // skip that query for normal user
+  allUser: isAdmin ? api.ky.selectFrom('TestUser').selectAll(): undefined; 
   insert: api.ky.insertInto('TestPost').values({
     id: uid(),
     name: 'post',
@@ -222,7 +250,7 @@ const check = await api.bulk({
     userId: userArr[0].id,
   }),
 });
-// It use key value to retrieve result
+// It use **key - value** to retrieve result.
 const allUser = check.getMany<UserTable>('allUser'); 
 const allUser = check.getOne<any>('insert'); 
 
@@ -254,11 +282,11 @@ const check = await api.bulk({
 # FAQ
 
 ### Is that libary is a ORM?
-No, It just a wrapper around kysely with a parser model from zod.
+No, It just a wrapper around kysely. 
+
+You can think is an API with zod for validation and kysely for query
 
 ### Parse custom schema on query with join
-By default when you use any join select query. It is not automatic parse by zod
-you can use that method to do it.
 ```typescript
 api.parseMany<UserTable & { dynamic: number }>(
   data,
@@ -270,6 +298,8 @@ api.parseMany<UserTable & { dynamic: number }>(
 ```
 ### migration 
 use the migration from kysely
+
+
 # Thank
 [kysely](https://github.com/kysely-org/kysely)
 [zod](https://github.com/colinhacks/zod)
