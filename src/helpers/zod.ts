@@ -17,8 +17,8 @@ import {
 // parse json and parse child with schema
 export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
   return z.custom<T>().transform((v, ctx): T => {
-    if (!v || typeof v !== 'string') return v;
     if (v === '') return (defaultValue ?? {}) as T;
+    if (!v || typeof v !== 'string') return v;
     try {
       return schema.parse(JSON.parse(v));
     } catch (e: any) {
@@ -35,8 +35,8 @@ export function zJsonArray<T>(
   defaultValue?: T[] extends { parse: any }[] ? never : T[]
 ) {
   return z.custom<T[]>().transform((v, ctx): T[] => {
+    if ((v as unknown) === '') return defaultValue ?? [];
     if (!v || typeof v !== 'string') return v;
-    if (v === '') return defaultValue ?? [];
     try {
       return JSON.parse(v);
     } catch (e: any) {
@@ -64,8 +64,8 @@ export function zRelationOne<T>(
   return z
     .custom<T>()
     .transform((v, ctx): T & { __relations: TableRelation<T> } => {
+      if ((v as unknown) === '') return (defaultValue ?? {}) as any;
       if (!v || typeof v !== 'string') return v as any;
-      if (v === '') return (defaultValue ?? {}) as any;
       try {
         return JSON.parse(v);
       } catch (e: any) {
@@ -87,8 +87,8 @@ export function zRelationMany<T>(
   return z
     .custom<Array<T & { __relations: TableRelation<T> }>>()
     .transform((v, ctx): T[] => {
+      if ((v as unknown) === '') return defaultValue ?? [];
       if (!v || typeof v !== 'string') return v;
-      if (v === '') return defaultValue ?? [];
       try {
         return JSON.parse(v);
       } catch (e: any) {

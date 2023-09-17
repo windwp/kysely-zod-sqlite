@@ -1,31 +1,24 @@
 import { afterAll, describe, vi } from 'vitest';
 import { handler } from '../src/driver/sqlite-driver';
-import dotenv from 'dotenv';
-dotenv.config();
-import { runTest } from './sharedTest';
+import { getDb, runTest } from './sharedTest';
 import { TestApi } from './TestApi';
 import { FetchDriver } from '../src/driver/fetch-driver';
 import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
-import Database from 'better-sqlite3';
 
-const config = {
-  logger: loglevel,
-};
 const api = new TestApi({
-  config,
+  config: { logger: loglevel },
   schema: dbSchema,
   driver: new FetchDriver({
     apiKey: 'test',
     apiUrl: 'http://localhost:3000/api/v1',
-    database: 'Test',
     logger: loglevel,
   }),
 });
 
-const db = new Database(':memory:');
+const db = getDb();
 
-global.fetch = vi.fn((_, options) => {
+vi.stubGlobal('fetch', (_: any, options: any) => {
   try {
     const data = handler(db, JSON.parse(options?.body as string));
     return Promise.resolve({

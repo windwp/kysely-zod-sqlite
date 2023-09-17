@@ -12,13 +12,13 @@ It has an simple api of Prisma and a powerful query with Kysely.
 Define zod and use it for kysely model. Schema can be reuse on trpc router
 
 ``` typescript 
+import {z} from zod
 import {
-  zBoolean,
-  zDate,
-  zJsonArray,
   zJsonObject,
   zJsonSchema,
   zRelationOne,
+  zBoolean,
+  zDate,
 } from 'kysely-zod-sqlite';
 export const userSchema = z.object({
   id: z.string(),
@@ -29,9 +29,10 @@ export const userSchema = z.object({
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
   })), // zod schema to parse
-  createdAt: zDate, // parse sqlite date
+  createdAt: zDate, // custom parse sqlite date
   updatedAt: zDate,
-  isDelete: zBoolean, // parse boolean 1,0
+  isDelete: zBoolean, // parse boolean 1,0 or you can use z.coerce.boolean()
+
 });
 export const postSchema = z.object({
   id: z.string(),
@@ -59,14 +60,14 @@ export const userRelationSchema = userSchema.extend({
     table: 'TestPost',
   }),
 });
-export type PostTable = TypeOf<typeof postRelationSchema>;
-export type UserTable = TypeOf<typeof userRelationSchema>;
+export type PostTable = z.input<typeof postRelationSchema>;
+export type UserTable = z.input<typeof userRelationSchema>;
 // define an api Database
 export const dbSchema = z.object({
   TestUser: userRelationSchema,
   TestPost: postRelationSchema,
 });
-export type Database = TypeOf<typeof dbSchema>;
+export type Database = z.input<typeof dbSchema>;
 ```
 then you use that schema to define api
 ```typescript

@@ -1,12 +1,21 @@
-import { beforeAll, beforeEach, expect, it } from 'vitest';
+import { beforeEach, expect, it } from 'vitest';
 import { TestApi } from './TestApi';
 import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
 import { uid } from '../src';
+import Database from 'better-sqlite3';
+import fs from 'fs';
 
-async function textFixture(api: TestApi) {
+export function getDb(): any {
+  const db = new Database(':memory:');
+  const sqlFile = './migrations/0000_init.sql';
+  db.exec(fs.readFileSync(sqlFile, 'utf-8'));
+  return db;
+}
+
+async function testFixture(api: TestApi) {
   api.config.logger?.setLevel('silent');
   await api.TestUser.deleteMany({});
   await api.TestPost.deleteMany({});
@@ -40,68 +49,8 @@ async function textFixture(api: TestApi) {
 }
 export function runTest(api: TestApi) {
   let userArr: UserTable[];
-  beforeAll(async () => {
-    api.config.logger?.setLevel('silent');
-    await api.ky.schema
-      .createTable('TestUser')
-      .ifNotExists()
-      .addColumn('id', 'text', cb => cb.primaryKey())
-      .addColumn('name', 'text')
-      .addColumn('email', 'boolean', cb => cb.unique())
-      .addColumn('data', 'text')
-      .addColumn('createdAt', 'datetime', cb =>
-        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
-      )
-      .addColumn('updatedAt', 'datetime', cb =>
-        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
-      )
-      .execute();
-    await api.ky.schema
-      .createTable('TestPost')
-      .ifNotExists()
-      .addColumn('id', 'text', cb => cb.primaryKey())
-      .addColumn('name', 'text')
-      .addColumn('isPublished', 'boolean', cb => cb.defaultTo(false))
-      .addColumn('data', 'text')
-      .addColumn('userId', 'text')
-      .addColumn('createdAt', 'datetime', cb =>
-        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
-      )
-      .addColumn('updatedAt', 'datetime', cb =>
-        cb.defaultTo(sql`CURRENT_TIMESTAMP`)
-      )
-      .addForeignKeyConstraint(
-        'Post_userId_fkey',
-        ['userId'],
-        'TestUser',
-        ['id'],
-        cb => cb.onDelete('cascade')
-      )
-      .execute();
-    await api.ky.schema
-      .createTable('TestNoId')
-      .ifNotExists()
-      .addColumn('userId', 'text')
-      .addColumn('postId', 'text')
-      .addColumn('sample', 'text')
-      .addUniqueConstraint('userId_postId_unique', ['userId', 'postId'])
-      .execute();
-    await api.ky.schema
-      .createTable('TestOrder')
-      .ifNotExists()
-      .addColumn('id', 'integer', col => col.autoIncrement().primaryKey())
-      .addColumn('name', 'text')
-      .addColumn('price', 'integer')
-      .execute();
-    await api.ky.schema
-      .createTable('TestExtend')
-      .ifNotExists()
-      .addColumn('id', 'integer', col => col.autoIncrement().primaryKey())
-      .addColumn('name', 'text')
-      .execute();
-  });
   beforeEach(async () => {
-    const data = await textFixture(api);
+    const data = await testFixture(api);
     userArr = data.userArr;
   });
 
@@ -159,6 +108,43 @@ export function runTest(api: TestApi) {
       .where('id', '=', testId)
       .executeTakeFirst();
     expect(check.numUpdatedRows).toBe(1);
+  });
+  it('should insert with zodjson', async () => {
+    {
+      const check = await api.TestUser.insertOne({
+        name: 'dafda',
+        email: 'withdata@gmail.com',
+        data: '' as any,
+      });
+      const value = await api.TestUser.selectById(check?.id!);
+      expect(typeof value?.data).toBe('object');
+    }
+
+    {
+      const check = await api.TestUser.insertOne({
+        name: 'dafda',
+        email: 'withconfig@gmail.com',
+        data: '' as any,
+        config: {
+          language: 'dsfdsa',
+          status: 'working',
+        },
+      });
+
+      const value = await api.TestUser.selectById(check?.id!);
+      api.TestUser.ky.selectFrom('TestUser').select(['id', 'config']);
+      api.TestUser.ky.insertInto('TestUser').values({
+        id: '1234',
+        name: 'dsfas',
+        email: 'wi',
+        data: {} as any,
+        config: {
+          language: 'dsfdsa',
+          status: 'working',
+        },
+      });
+      expect(typeof value?.config).toBe('object');
+    }
   });
 
   it('short syntax should working', async () => {
@@ -580,7 +566,7 @@ export function runTest(api: TestApi) {
     expect(typeof data[0].data === 'string').toBeTruthy();
     {
       const check = api.parseMany<UserTable>(data, 'TestUser');
-      expect(check[0].data.o).toBeTruthy();
+      expect(check[0].data?.o).toBeTruthy();
     }
 
     {
@@ -618,14 +604,13 @@ export function runTest(api: TestApi) {
     await api.TestNoId.insertOne({
       postId: '123456',
       userId: '123456',
-      sample: 'sample',
     });
     const test = await api.TestNoId.insertOne({
       postId: '123456',
       userId: '1234567',
       sample: 'sample',
     });
-    expect(test?.id).toBeFalsy();
+    expect((test as any)?.id).toBeFalsy();
     const check = await api.TestNoId.selectMany({});
     expect(check.length).toBe(2);
     expect((check[0] as any)['id']).toBe(undefined);
@@ -650,7 +635,7 @@ export function runTest(api: TestApi) {
     });
     expect(check?.id).toBe(2);
   });
-  it('should insermany increment', async () => {
+  it('insertMany increment', async () => {
     await api.TestOrder.deleteMany({});
     {
       const check = await api.TestOrder.insertMany([

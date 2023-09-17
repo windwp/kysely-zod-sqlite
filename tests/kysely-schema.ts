@@ -1,8 +1,9 @@
-import { TypeOf, z } from 'zod';
+import { z } from 'zod';
 import {
   zBoolean,
   zDate,
   zJsonObject,
+  zJsonSchema,
   zRelationMany,
   zRelationOne,
 } from '../src/helpers/zod';
@@ -19,8 +20,14 @@ type UserData = z.infer<typeof dataSchema>;
 export const userSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().optional(),
-  data: zJsonObject<UserData>(),
+  email: z.string(),
+  data: zJsonObject<UserData>().optional(),
+  config: zJsonSchema(
+    z.object({
+      language: z.string(),
+      status: z.enum(['busy', 'working']),
+    })
+  ).optional(),
   createdAt: zDate(),
   updatedAt: zDate(),
 });
@@ -55,13 +62,13 @@ export const userRelationSchema = userSchema.extend({
 export const testNoIdSchema = z.object({
   userId: z.string(),
   postId: z.string(),
-  sample: z.string(),
+  sample: z.string().default('visual'),
 });
-export type NoIdTable = TypeOf<typeof testNoIdSchema>;
+export type NoIdTable = z.input<typeof testNoIdSchema>;
 
-export type PostTable = TypeOf<typeof postRelationSchema>;
+export type PostTable = z.input<typeof postRelationSchema>;
 
-export type UserTable = TypeOf<typeof userRelationSchema>;
+export type UserTable = z.input<typeof userRelationSchema>;
 
 export const orderSchema = z.object({
   id: z.number(),
@@ -69,12 +76,12 @@ export const orderSchema = z.object({
   price: z.number(),
 });
 
-export type OrderTable = TypeOf<typeof orderSchema>;
+export type OrderTable = z.input<typeof orderSchema>;
 export const dbSchema = z.object({
-  TestUser: userRelationSchema,
   TestPost: postRelationSchema,
+  TestUser: userRelationSchema,
   TestNoId: testNoIdSchema,
   TestOrder: orderSchema,
 });
 
-export type Database = TypeOf<typeof dbSchema>;
+export type Database = z.input<typeof dbSchema>;

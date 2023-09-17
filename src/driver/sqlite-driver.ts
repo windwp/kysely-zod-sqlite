@@ -8,7 +8,6 @@ import { DataBody } from '../types';
 import { Database } from 'better-sqlite3';
 
 interface BettterDriverConfig {
-  database: string;
   logger?: any;
 }
 export class BetterSqlite3Driver implements Driver {
@@ -158,7 +157,6 @@ class BetterConnection implements DatabaseConnection {
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
-      database: this.#config.database,
       ...rest,
     };
 

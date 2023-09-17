@@ -9,7 +9,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import { TypeOf, ZodAny, ZodObject, z } from 'zod';
+import { TypeOf, ZodAny, ZodObject, ZodType, z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
@@ -27,13 +27,12 @@ import type {
   QueryWhere,
   TableRelation,
 } from './types';
+import { SetOptional } from 'type-fest';
 
-export class SqliteApi<
-  Database extends Record<string, { id: string | number } | any>
-> {
+export class SqliteApi<Database extends Record<string, any>> {
   readonly ky: Kysely<Database>;
   readonly config: DbConfig | FetchConfig;
-  readonly schema: z.ZodObject<any, any, any, Database>;
+  readonly schema: z.ZodObject<any, any, any>;
   readonly driver: Driver;
 
   constructor({
@@ -43,7 +42,7 @@ export class SqliteApi<
   }: {
     config: DbConfig;
     driver: Driver;
-    schema: z.ZodObject<any, any, any, Database>;
+    schema: z.ZodObject<any, any, any>;
   }) {
     this.config = config;
     this.schema = schema;
@@ -73,7 +72,7 @@ export class SqliteApi<
     return this.ky.executeQuery(body) as any;
   }
 
-  runSql<T = any>(
+  execSql<T = any>(
     sqlQuery: RawBuilder<T> | { compile: () => CompiledQuery<T> },
     action: 'run' | 'selectAll' | 'selectFirst' = 'run',
     opts?: ApiOptions
@@ -269,8 +268,8 @@ export class SqliteApi<
     }
   ) {
     const ky = opts?.driver ? this.initKysely(opts?.driver) : this.ky;
-    return new PTable<Database[K], Pick<Database, K>>(
-      ky as any,
+    return new PTable<Database[K], K>(
+      ky as Database[K],
       tableName,
       this.schema.shape[tableName],
       opts
@@ -404,26 +403,30 @@ function mappingRelations<V>(
  */
 export class PTable<
   Table extends { id: string | number },
-  Database extends { [K in keyof Database]: { id: string | number } }
+  TableName extends string
 > {
   private timeStamp: boolean;
   private autoId: boolean;
-  private autoIdFnc: (tableName: string, value: Partial<Table>) => string;
+  private autoIdFnc: (tableName: string, value: any) => string;
   relations: { [k: string]: TableRelation };
   constructor(
-    public readonly ky: Kysely<Database>,
-    private readonly table: keyof Database & string,
-    public readonly schema?: ZodObject<any, any>,
+    public readonly ky: Kysely<{ [k in TableName]: Table }>,
+    private readonly table: TableName,
+    public readonly schema: ZodObject<{
+      [k in keyof Table]: ZodType<Table[k]>;
+    }>,
     opts?: {
       timeStamp?: boolean;
       autoId?: boolean;
-      autoIdFnc?: (tableName: string, value: Partial<Table>) => string;
+      autoIdFnc?: (tableName: string, value: Table) => string;
     }
   ) {
     this.schema = schema;
-    this.timeStamp = opts?.timeStamp ?? !!this.schema?.shape['updatedAt'];
+    this.timeStamp =
+      opts?.timeStamp ?? !!(this.schema?.shape as any)['updatedAt'];
     this.autoId =
-      opts?.autoId ?? this.schema?.shape['id']?._def?.typeName === 'ZodString';
+      opts?.autoId ??
+      (this.schema?.shape['id']?._def as any)?.typeName === 'ZodString';
     this.autoIdFnc =
       opts?.autoIdFnc ||
       function () {
@@ -448,8 +451,9 @@ export class PTable<
   $selectMany(opts: QueryRelations<Table>) {
     let query = this.ky.selectFrom(this.table);
     query = mappingQueryOptions(query, opts);
-    if (this.relations)
+    if (this.relations) {
       query = mappingRelations(query, this.table, this.relations, opts);
+    }
     return query;
   }
 
@@ -478,7 +482,8 @@ export class PTable<
     if (this.timeStamp) {
       (opts.data as any).updatedAt = new Date();
     }
-    return query.set(opts.data as any);
+    const schema = this.schema.extend({ id: z.any() }).partial();
+    return query.set(schema.parse(opts.data) as any);
   }
 
   async updateOne(opts: Query<Table> & { data: Partial<Table> }): Promise<{
@@ -502,35 +507,37 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  async insertOne(
-    value: Partial<Table>
-  ): Promise<(Partial<Table> & { id: Table['id'] }) | undefined> {
+  async insertOne(value: SetOptional<Table, 'id'>): Promise<Table | undefined> {
     const check = await this.$insertOne(value).executeTakeFirst();
     if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
       if (!this.autoId && check.insertId && this.schema?.shape['id']) {
         value.id = Number(check.insertId);
       }
-      return value as Partial<Table> & { id: Table['id'] };
+      return value as Table;
     }
     return undefined;
   }
 
-  $insertOne(value: Partial<Table>) {
-    if (!value.id && this.autoId) value.id = this.autoIdFnc(this.table, value);
+  $insertOne(value: SetOptional<Table, 'id'>) {
+    if (!value.id && this.autoId)
+      value.id = this.autoIdFnc(this.table, value as Table);
+    const v = value as any;
     if (this.timeStamp) {
-      // @ts-ignore
-      if (!value.createdAt) value.createdAt = new Date();
-      // @ts-ignore
-      if (!value.updatedAt) value.updatedAt = new Date();
+      if (!v.createdAt) v.createdAt = new Date();
+      if (!v.updatedAt) v.updatedAt = new Date();
     }
-    return this.ky.insertInto(this.table).values(value as any);
+    const validValue = this.schema
+      .extend({ id: z.any() })
+      .strict()
+      .parse(v) as unknown as Table;
+    return this.ky.insertInto(this.table).values(validValue as any);
   }
 
   /**
    * It use for a non unique key if a key is unique use InsertConflict
    */
   async upsert(opts: {
-    data: Partial<Table> & { id?: Table['id'] };
+    data: Partial<Table>;
     where?: QueryWhere<Table>;
   }): Promise<Partial<Table> | undefined> {
     if (opts.data.id) {
@@ -542,13 +549,13 @@ export class PTable<
     }
     opts.data.id = this.autoIdFnc(this.table, opts.data);
     if (!opts.where) {
-      await this.insertOne(opts.data);
+      await this.insertOne(opts.data as Table);
       return opts.data;
     }
 
     const check = await this.selectFirst(opts);
     if (!check) {
-      return await this.insertOne(opts.data);
+      return await this.insertOne(opts.data as Table);
     }
     await this.updateOne({ where: opts.where, data: opts.data });
     return opts.data as any;
@@ -602,14 +609,16 @@ export class PTable<
   }
 
   $insertMany(values: Array<Partial<Table>>) {
-    values.forEach((o: any) => {
+    const schema = this.schema?.extend({ id: z.any() });
+    const validValues = values.map((o: any) => {
       if (!o.id && this.autoId) o.id = this.autoIdFnc(this.table, o);
       if (this.timeStamp) {
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();
       }
+      return schema.parse(o);
     });
-    return this.ky.insertInto(this.table).values(values as any);
+    return this.ky.insertInto(this.table).values(validValues as any);
   }
 
   async deleteMany(opts: {
