@@ -2,6 +2,7 @@ import type { ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
 import type { Logger } from 'loglevel';
 import type { ZodObject } from 'zod';
 import type { Fetcher } from '@cloudflare/workers-types';
+import { IsAny } from 'type-fest';
 
 export type DbConfig = {
   logger?: Logger;
@@ -93,8 +94,12 @@ export type Query<V> = {
 };
 
 export type ExtractFieldsWithRelations<T> = {
-  [K in keyof T as NonNullable<T[K]> extends { __relations: any }
-    ? K
+  [K in keyof T as NonNullable<T[K]> extends
+    | { __relations: any }
+    | { __relations: any }[]
+    ? IsAny<T[K]> extends true
+      ? never
+      : K
     : never]: T[K];
 };
 
@@ -102,13 +107,22 @@ export type QueryRelations<V> = Query<V> & {
   include?: {
     [k in keyof ExtractFieldsWithRelations<V>]?:
       | boolean
-      | {
-          select: k extends keyof V
-            ? {
-                [field in keyof NonNullable<V[k]>]?: boolean;
-              }
-            : never;
-        };
+      | (V[k] extends Array<infer X> | undefined
+          ? {
+              select: {
+                [field in keyof Omit<X, '__relations'>]?: boolean;
+              };
+            }
+          : {
+              select: k extends keyof V
+                ? {
+                    [field in keyof Omit<
+                      NonNullable<V[k]>,
+                      '__relations'
+                    >]?: boolean;
+                  }
+                : never;
+            });
   };
 };
 
