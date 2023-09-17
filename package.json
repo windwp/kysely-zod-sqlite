@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/windwp/kysey-zod-sqlite.git"
+    "url": "https://github.com/windwp/kysely-zod-sqlite.git"
   },
   "license": "MIT",
   "author": {
@@ -64,7 +64,7 @@
     "typescript"
   ],
   "bugs": {
-    "url": "https://github.com/windwp/kysey-zod-sqlite/issues"
+    "url": "https://github.com/windwp/kysely-zod-sqlite/issues"
   },
   "publishConfig": {
     "access": "public"
