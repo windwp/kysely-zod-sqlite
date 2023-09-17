@@ -62,7 +62,7 @@ export function zRelationOne<T>(
   defaultValue?: T extends { parse: any } ? never : T
 ) {
   return z
-    .custom<T>()
+    .custom<T & { __relations: TableRelation<T> }>()
     .transform((v, ctx): T & { __relations: TableRelation<T> } => {
       if ((v as unknown) === '') return (defaultValue ?? {}) as any;
       if (!v || typeof v !== 'string') return v as any;

@@ -52,6 +52,7 @@ export const postRelationSchema = postSchema.extend({
 });
 
 export const userRelationSchema = userSchema.extend({
+  test: zJsonObject<any>(),
   posts: zRelationMany({
     schema: postSchema,
     refTarget: 'userId',
