@@ -27,7 +27,7 @@ import type {
   QueryWhere,
   TableRelation,
 } from './types';
-import { SetOptional } from 'type-fest';
+import type { SetOptional } from 'type-fest';
 
 export class SqliteApi<Database extends Record<string, any>> {
   readonly ky: Kysely<Database>;
