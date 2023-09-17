@@ -114,6 +114,7 @@ export type QueryRelations<V> = Query<V> & {
 
 export type BatchResult = {
   rows: { key: string; results: any[]; table: string }[];
+  error?: any;
 };
 
 export type ExtractResultFromQuery<T> = T extends SelectQueryBuilder<

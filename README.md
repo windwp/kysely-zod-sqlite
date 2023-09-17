@@ -282,7 +282,7 @@ const check = await api.bulk({
 ```
 # FAQ
 
-### Is that libary is a ORM?
+### Is that library is a ORM?
 No, It just a wrapper around kysely. 
 
 You can think is an API with zod for validation and kysely for query

@@ -80,20 +80,19 @@ export async function handler(
       return {
         meta: v[0]?.meta,
         success: v?.[0].success,
-        results: v?.[0].results,
-        batch: v,
-      } as any;
+        results: v?.map(o => o.results),
+      };
     }
     case 'batchAllSmt': {
       const v = await d1.batch(
         body.batch.map((o: any) => {
-          return d1.prepare(o.sql).bind(...o.params);
+          return d1.prepare(o.sql).bind(...o.parameters);
         })
       );
       return {
         meta: v[0]?.meta,
         success: v?.[0].success,
-        results: v?.[0].results,
+        results: v?.map(o => o.results),
       };
     }
     case 'bulks': {

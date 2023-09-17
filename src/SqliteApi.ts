@@ -101,7 +101,10 @@ export class SqliteApi<Database extends Record<string, any>> {
     batchParams: Array<any[]>,
     opts?: ApiOptions
   ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
-    return await this.execQuery(this.$batchOneSmt(sqlQuery, batchParams), opts);
+    return await this.execQuery(
+      this.$batchOneSmt(sqlQuery, batchParams),
+      opts
+    ).catch((e: any) => ({ rows: [], error: e }));
   }
 
   $batchOneSmt(
@@ -144,9 +147,13 @@ export class SqliteApi<Database extends Record<string, any>> {
         };
       }),
     };
-    const data: { rows: any[] } = await this.execQuery(body, opts);
+    const data: { rows: any[]; error?: any } = await this.execQuery(
+      body,
+      opts
+    ).catch((e: any) => ({ rows: [], error: e }));
     return {
-      data: data.rows,
+      error: data.error,
+      rows: data.rows,
       getOne: <X = any>(index: number): X | undefined => {
         if (Array.isArray(data.rows[index])) {
           return this.parseMany(data.rows[index], body.batch[index].table)?.[0];
@@ -200,10 +207,16 @@ export class SqliteApi<Database extends Record<string, any>> {
       isTransaction: opts?.isTransaction ?? false,
       operations: ops.filter(o => o.action),
     };
-    const data: BatchResult = await this.execQuery(body, opts);
+    const data: BatchResult = await this.execQuery(body, opts).catch(
+      (e: any) => ({
+        rows: [],
+        error: e,
+      })
+    );
 
     return {
       data: data.rows,
+      error: data.error,
       getOne: <X = any>(
         key: V,
         table?: keyof Database,
