@@ -8,7 +8,7 @@ import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
 
 describe('FetchDriver', () => {
-  if (process.env.CI) {
+  if (process.env.API_URL) {
     const api = new TestApi({
       config: { logger: loglevel },
       schema: dbSchema,
