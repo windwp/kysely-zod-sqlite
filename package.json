@@ -1,7 +1,7 @@
 {
   "name": "kysely-zod-sqlite",
   "version": "1.1.1",
-  "description": "extends kysely with zod to use cloudflare d1, sqlite",
+  "description": "An flexible api for Cloudflare D1 and sqlite. It has an simple api of Prisma and a powerful query with Kysely. ",
   "main": "./dist/index.js",
   "type": "module",
   "files": [
@@ -21,13 +21,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/chanceseed-com/kysey-zod-sqlite.git"
+    "url": "https://github.com/windwp/kysey-zod-sqlite.git"
   },
   "license": "MIT",
   "author": {
-    "name": "chanceseed-com",
-    "email": "chanceseed-com@users.noreply.github.com",
-    "url": "https://github.com/chanceseed-com"
+    "name": "windwp",
+    "email": "windwp@users.noreply.github.com",
+    "url": "https://github.com/windwp"
   },
   "exports": {
     ".": {
@@ -64,12 +64,12 @@
     "typescript"
   ],
   "bugs": {
-    "url": "https://github.com/chanceseed-com/kysey-zod-sqlite/issues"
+    "url": "https://github.com/windwp/kysey-zod-sqlite/issues"
   },
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/chanceseed-com/kysely-zod-sqlite",
+  "homepage": "https://github.com/windwp/kysely-zod-sqlite",
   "config": {
     "commitizen": {
       "path": "./node_modules/@ryansonshine/cz-conventional-changelog"
