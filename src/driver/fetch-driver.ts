@@ -60,12 +60,13 @@ class FetchConnection implements DatabaseConnection {
       }
       if (res?.ok) {
         const results = await res.json();
+        const numAffectedRows =
+          results.meta?.changes > 0 ? results.meta?.changes : undefined;
         return {
-          insertId: results.results?.lastInsertRowid,
-          rows: results.results,
-          batch: results.batch,
-          numAffectedRows: results.results?.changes ?? undefined,
-        } as any;
+          insertId: results.meta.last_row_id ?? undefined,
+          rows: results.results || [],
+          numAffectedRows,
+        };
       }
       return { rows: [], error: await res.text(), numAffectedRows: BigInt(0) };
     } catch (error: any) {

@@ -1,5 +1,5 @@
--- Create TestUser table
-CREATE TABLE IF NOT EXISTS TestUser (
+DROP TABLE IF EXISTS TestUser;
+CREATE TABLE TestUser (
     id TEXT PRIMARY KEY,
     name TEXT,
     email TEXT UNIQUE,
@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS TestUser (
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create TestPost table
-CREATE TABLE IF NOT EXISTS TestPost (
+DROP TABLE IF EXISTS TestPost;
+CREATE TABLE TestPost (
     id TEXT PRIMARY KEY,
     name TEXT,
     isPublished BOOLEAN DEFAULT FALSE,
@@ -21,23 +21,23 @@ CREATE TABLE IF NOT EXISTS TestPost (
     FOREIGN KEY (userId) REFERENCES TestUser(id) ON DELETE CASCADE
 );
 
--- Create TestNoId table
-CREATE TABLE IF NOT EXISTS TestNoId (
+DROP TABLE IF EXISTS TestNoId;
+CREATE TABLE TestNoId (
     userId TEXT,
     postId TEXT,
     sample TEXT,
     UNIQUE(userId, postId)
 );
 
--- Create TestOrder table
-CREATE TABLE IF NOT EXISTS TestOrder (
+DROP TABLE IF EXISTS TestOrder;
+CREATE TABLE TestOrder (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     price INTEGER
 );
 
--- Create TestExtend table
-CREATE TABLE IF NOT EXISTS TestExtend (
+DROP TABLE IF EXISTS TestExtend;
+CREATE TABLE TestExtend (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT
 );
