@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
-import { uid, zBoolean, zJsonSchema } from '../src';
+import { uid, zJsonSchema } from '../src';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
@@ -563,6 +563,7 @@ export function runTest(api: TestApi) {
   });
 
   it('innerJoin will not parse', async () => {
+    await testFixture(api, 2);
     const data = await api.ky
       .selectFrom('TestPost')
       .limit(1)
@@ -667,8 +668,13 @@ export function runTest(api: TestApi) {
     const extendApi = api.withTables(
       {
         TestExtend: z.object({
-          id: z.number().optional(),
+          id: z.number(),
           name: z.string(),
+          data: zJsonSchema(
+            z.object({
+              status: z.enum(['ok', 'wrong']),
+            })
+          ).optional(),
         }),
       },
       {
@@ -676,13 +682,10 @@ export function runTest(api: TestApi) {
       }
     );
     {
-      const check = await extendApi.ky
-        .insertInto('TestExtend')
-        .values({
-          name: 'testextend',
-        })
-        .executeTakeFirst();
-      expect(check?.insertId).toBeTruthy();
+      const check = await extendApi.table('TestExtend').insertOne({
+        name: 'testextend',
+      });
+      expect(check?.id).toBeTruthy();
     }
     {
       const check = await extendApi.testExtend.selectFirst({
@@ -690,5 +693,18 @@ export function runTest(api: TestApi) {
       });
       expect(check?.id).toBeTruthy();
     }
+  });
+  it('should validate jsonschema', async () => {
+    await api.TestUser.insertOne({
+      name: 'dsfdsa',
+      email: 'jsonschema@gmail.com',
+    });
+    await expect(async () => {
+      await api.TestUser.insertOne({
+        config: { ldsafsa: 'dasd' } as any,
+        name: 'dsfdsa',
+        email: 'jsonschema@gmail.com',
+      });
+    }).rejects.toThrowError();
   });
 }

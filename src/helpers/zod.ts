@@ -17,10 +17,11 @@ import {
 // parse json and parse child with schema
 export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
   return z.custom<T>().transform((v, ctx): T => {
-    if (v === '') return (defaultValue ?? {}) as T;
-    if (!v || typeof v !== 'string') return v;
+    if (v === '' || (!v && schema.isOptional())) return defaultValue as T;
+    if (typeof v !== 'string') return schema.parse(v);
     try {
-      return schema.parse(JSON.parse(v));
+      const daa = schema.parse(JSON.parse(v));
+      return daa;
     } catch (e: any) {
       ctx.addIssue({
         code: 'custom',
