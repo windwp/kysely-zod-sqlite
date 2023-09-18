@@ -24,11 +24,11 @@ export const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().optional(),
-  data: zJsonObject<UserData>(),  // It use Json.parse
-  config: zJsonSchema(z.object({
+  data: zJsonObject<UserData>(),  // it use JSON.parse
+  config: zJsonSchema(z.object({  // it use zod.parse
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
-  })), // zod schema to parse
+  })), 
   createdAt: zDate, // custom parse sqlite date
   updatedAt: zDate,
   isDelete: zBoolean, // parse boolean 1,0 or you can use z.coerce.boolean()
