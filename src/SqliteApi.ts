@@ -421,7 +421,7 @@ export class PTable<
   private timeStamp: boolean;
   private autoId: boolean;
   private autoIdFnc: (tableName: string, value: any) => string;
-  relations: { [k: string]: TableRelation };
+  private relations: { [k: string]: TableRelation };
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,

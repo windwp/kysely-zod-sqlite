@@ -1,0 +1,11 @@
+name = "kysely-worker-example"
+main = "src/worker.ts"
+compatibility_date = "2023-08-21"
+
+[[ d1_databases ]]
+binding = "D1_DB"
+database_name = "public-test-db"
+database_id = ""
+
+[vars]
+DB_API_KEY = "test-key"

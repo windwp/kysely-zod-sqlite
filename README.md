@@ -127,7 +127,7 @@ const api = new TestApi({
   driver: new BetterDriver(new Database(':memory:'), config),
 });
 ```
-### working inside worker and pages
+### Working inside worker and pages
 ```typescript
 import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
 const api = new TestApi({
@@ -136,7 +136,7 @@ const api = new TestApi({
   driver: new D1Driver(env.D1_DB, config),
 });
 ```
-### working outside cloudflare worker, pages
+### Working outside cloudflare worker, pages
 You need to deploy a custom worker then you can connect to it on your app
 [worker remote](./example/worker/src/worker.ts)
 ```typescript
@@ -152,7 +152,7 @@ const api = new TestApi({
   }),
 });
 ```
-### call from cloudflare pages to worker or from worker to worker
+### Call from cloudflare pages to worker or from worker to worker
 ```typescript
 import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
@@ -168,7 +168,7 @@ const api = new TestApi({
   }),
 });
 ```
-### multiple driver per table
+### Multiple driver per table
 ```typescript
 export class TestApi extends SqliteApi<Database> {
   //... another table use a default driver
@@ -236,7 +236,7 @@ const result = await api.batchAllSmt([
 const users = result.getMany<UserTable>(0);
 const post = result.getOne<PostTable>(1);
 ```
-### bulk method
+### Bulk method
 working with array on batch method is difficult when you run query depend on some condition.
 so I create bulk
 ```typescript
@@ -286,6 +286,19 @@ const check = await api.bulk({
 No, It just a wrapper around kysely. 
 
 You can think is an API with zod for validation and kysely for query
+
+### Different between using table vs kysely
+``` typescript
+api.table('aaa').insertOne({...}) // validation input value with zod
+api.ky.insertInto('aaa').values({...}) // it is type checking
+```
+
+### What is $ on table
+```typescript
+api.table('aaa').selectMany() // you it to get data
+api.table('aaa').$selectMany() 
+// it is kysely query you can add more query or use on batch
+```
 
 ### Parse custom schema on query with join
 ```typescript

@@ -39,42 +39,34 @@ class FetchConnection implements DatabaseConnection {
     }
     this.#config.logger?.debug(body);
 
-    try {
-      const req = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.#config.apiKey,
-          cache: 'no-cache, no-store',
-        },
-        body: JSON.stringify(body),
-      } as const;
-      let res: Response;
-      if (this.#config.binding?.fetch) {
-        res = (await this.#config.binding.fetch(
-          this.#config.apiUrl,
-          req
-        )) as unknown as Response;
-      } else {
-        res = await fetch(this.#config.apiUrl, req);
-      }
-      if (res?.ok) {
-        const results = await res.json();
-        const numAffectedRows =
-          results.meta?.changes > 0 ? results.meta?.changes : undefined;
-        return {
-          insertId: results.meta.last_row_id ?? undefined,
-          rows: results.results || [],
-          numAffectedRows,
-        };
-      }
-      return { rows: [], error: await res.text(), numAffectedRows: BigInt(0) };
-    } catch (error: any) {
-      this.#config.logger?.error(
-        `[FetchDriver] ${this.#config.apiUrl} Error: ${error.message}`
-      );
-      throw error;
+    const req = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': this.#config.apiKey,
+        cache: 'no-cache, no-store',
+      },
+      body: JSON.stringify(body),
+    };
+    const res: Response = this.#config.binding?.fetch
+      ? ((await this.#config.binding.fetch(this.#config.apiUrl, req)) as any)
+      : await fetch(this.#config.apiUrl, req);
+
+    if (res?.ok) {
+      const results = await res.json();
+      const numAffectedRows =
+        results.meta?.changes > 0 ? results.meta?.changes : undefined;
+      return {
+        insertId: results.meta.last_row_id ?? undefined,
+        rows: results.results || [],
+        numAffectedRows,
+      };
     }
+    const errorMessage = await res.text();
+    this.#config.logger?.error(
+      `[FetchDriver] ${this.#config.apiUrl} Error: ${errorMessage}`
+    );
+    throw new Error(errorMessage);
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await, require-yield
