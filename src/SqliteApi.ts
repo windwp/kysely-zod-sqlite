@@ -425,7 +425,7 @@ export class PTable<
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,
-    public readonly schema: ZodObject<{
+    private readonly schema?: ZodObject<{
       [k in keyof Table]: ZodType<Table[k]>;
     }>,
     opts?: {
@@ -436,7 +436,7 @@ export class PTable<
   ) {
     this.schema = schema;
     this.timeStamp =
-      opts?.timeStamp ?? !!(this.schema?.shape as any)['updatedAt'];
+      opts?.timeStamp ?? !!(this.schema?.shape as any)?.['updatedAt'];
     this.autoId =
       opts?.autoId ??
       (this.schema?.shape['id']?._def as any)?.typeName === 'ZodString';
@@ -495,8 +495,8 @@ export class PTable<
     if (this.timeStamp) {
       (opts.data as any).updatedAt = new Date();
     }
-    const schema = this.schema.extend({ id: z.any() }).partial();
-    return query.set(schema.parse(opts.data) as any);
+    const schema = this.schema?.extend({ id: z.any() }).partial();
+    return query.set((schema?.parse(opts.data) ?? opts.data) as any);
   }
 
   async updateOne(opts: Query<Table> & { data: Partial<Table> }): Promise<{
@@ -540,7 +540,7 @@ export class PTable<
       if (!v.updatedAt) v.updatedAt = new Date();
     }
     const validValue = this.schema
-      .extend({ id: z.any() })
+      ?.extend({ id: z.any() })
       .strict()
       .parse(v) as unknown as Table;
     return this.ky.insertInto(this.table).values(validValue as any);
@@ -629,7 +629,7 @@ export class PTable<
         if (!o.createdAt) o.createdAt = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();
       }
-      return schema.parse(o);
+      return schema?.parse(o) ?? o;
     });
     return this.ky.insertInto(this.table).values(validValues as any);
   }
