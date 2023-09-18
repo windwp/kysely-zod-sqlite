@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
-import { uid } from '../src';
+import { uid, zBoolean, zJsonSchema } from '../src';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
@@ -104,7 +104,7 @@ export function runTest(api: TestApi) {
       .executeTakeFirst();
     expect(check.numUpdatedRows).toBe(1);
   });
-  it('should insert with zodjson', async () => {
+  it('should insert with json', async () => {
     {
       const check = await api.TestUser.insertOne({
         name: 'dafda',

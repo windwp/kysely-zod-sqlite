@@ -50,7 +50,7 @@ export class SqliteSerializePlugin implements KyselyPlugin {
           )
         );
       } catch (error: any) {
-        this.logger?.error('Rows Data:');
+        this.logger?.error(`zod serialize: ${error.message}`);
         this.logger?.error(rows);
         throw new Error(`Parse table: ${table} => ${error.message}`);
       }
