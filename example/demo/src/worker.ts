@@ -63,6 +63,5 @@ export default {
 				},
 			},
 		});
-		console.log('users', users);
 	},
 };

@@ -23,11 +23,13 @@ export const userSchema = z.object({
   email: z.string(),
   data: zJsonObject<UserData>().optional(),
   config: zJsonSchema(
-    z.object({
-      language: z.string(),
-      status: z.enum(['busy', 'working']),
-    })
-  ).optional(),
+    z
+      .object({
+        language: z.string(),
+        status: z.enum(['busy', 'working']),
+      })
+      .optional()
+  ),
   createdAt: zDate(),
   updatedAt: zDate(),
 });
