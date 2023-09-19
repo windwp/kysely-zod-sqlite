@@ -106,6 +106,7 @@ export async function handler(
         result.results?.push({
           key: op.key,
           results: data.results,
+          meta: data.meta,
         });
       }
       return result;

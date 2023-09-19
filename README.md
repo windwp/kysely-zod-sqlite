@@ -7,6 +7,11 @@ It has an simple api of Prisma and a powerful query with Kysely.
 - [x] api like primsa (support 1 level relation)
 - [x] unit testing D1 on local.
 
+
+# Install
+
+`npm install kysely-zod-sqlite`
+
 # Usage
 ### Define zod schema
 Define zod and use it for kysely model. Schema can be reuse on trpc router

@@ -41,7 +41,7 @@ class FetchConnection implements DatabaseConnection {
 
     const req = {
       method: 'POST',
-      headers: {
+      headers: this.#config.options?.requestHeader?.(body) || {
         'Content-Type': 'application/json',
         'api-key': this.#config.apiKey,
         cache: 'no-cache, no-store',

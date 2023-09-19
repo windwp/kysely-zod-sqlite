@@ -18,9 +18,9 @@ export type FetchConfig = {
   options?: ApiOptions;
 };
 export type ApiOptions = {
-  showSql?: boolean;
-  // retry?: number;
-  // throwError?: boolean;
+  debugSql?: boolean;
+  /* change request header */
+  requestHeader?: (body: any) => Record<string, any>;
 };
 
 export type OneActionBody =
@@ -67,10 +67,6 @@ export type TableDefinition<T> = {
   relations?: {
     [key: string]: TableRelation;
   };
-};
-
-export type ZodSchema = {
-  [key: string]: ZodObject<any, any>;
 };
 
 export type QueryWhere<V> = {
