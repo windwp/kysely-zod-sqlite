@@ -65,18 +65,18 @@ export const userRelationSchema = userSchema.extend({
     table: 'TestPost',
   }),
 });
-export type PostTable = z.input<typeof postRelationSchema>;
-export type UserTable = z.input<typeof userRelationSchema>;
+export type PostTable = z.infer<typeof postRelationSchema>;
+export type UserTable = z.infer<typeof userRelationSchema>;
 // define an api Database
 export const dbSchema = z.object({
   TestUser: userRelationSchema,
   TestPost: postRelationSchema,
 });
-export type Database = z.input<typeof dbSchema>;
+export type DbSchema = typeof dbSchema;
 ```
 then you use that schema to define api
 ```typescript
-export class TestApi extends SqliteApi<Database> {
+export class TestApi extends SqliteApi<DbSchema> {
   
   get TestUser() {
     return this.table('TestUser');

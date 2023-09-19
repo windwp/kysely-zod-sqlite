@@ -60,13 +60,13 @@ export const userRelationSchema = userSchema.extend({
 	}),
 });
 
-export type PostTable = z.input<typeof postRelationSchema>;
+export type PostTable = z.output<typeof postRelationSchema>;
 
-export type UserTable = z.input<typeof userRelationSchema>;
+export type UserTable = z.output<typeof userRelationSchema>;
 
 export const dbSchema = z.object({
 	TestPost: postRelationSchema,
 	TestUser: userRelationSchema,
 });
 
-export type Database = z.input<typeof dbSchema>;
+export type DbSchema = typeof dbSchema;

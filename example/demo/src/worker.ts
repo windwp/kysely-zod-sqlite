@@ -1,8 +1,8 @@
 import { SqliteApi } from 'kysely-zod-sqlite';
 import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
-import { dbSchema, Database } from './schema';
+import { dbSchema, DbSchema } from './schema';
 import logger from 'loglevel';
-export class TestApi extends SqliteApi<Database> {
+export class TestApi extends SqliteApi<DbSchema> {
 	get TestUser() {
 		return this.table('TestUser');
 	}
@@ -39,6 +39,7 @@ export default {
 				},
 			},
 		});
+		const daa = await api.TestPost.selectFirst('dsaf');
 		if (user) {
 			await api.TestPost.insertOne({
 				name: 'fdsadfsa',
