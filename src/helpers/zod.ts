@@ -3,11 +3,12 @@ import {
   OK,
   ParseInput,
   UnknownKeysParam,
-  ZodBoolean,
+  ZodBooleanDef,
   ZodDate,
   ZodFirstPartyTypeKind,
   ZodObject,
   ZodRawShape,
+  ZodType,
   ZodTypeAny,
   objectInputType,
   objectOutputType,
@@ -121,12 +122,17 @@ export class ZodKyDate extends ZodDate {
   }
 }
 
-export class ZodKyBoolean extends ZodBoolean {
+export class ZodKyBoolean extends ZodType<
+  boolean,
+  ZodBooleanDef,
+  boolean | undefined
+> {
   _parse(input: ParseInput) {
     if (typeof input.data !== 'boolean') {
       input.data = input.data === 1 || input.data === 'true';
     }
-    return super._parse(input);
+    input.data = Boolean(input.data);
+    return OK(input.data);
   }
 }
 

@@ -87,4 +87,4 @@ export const dbSchema = z.object({
   TestOrder: orderSchema,
 });
 
-export type Database = z.input<typeof dbSchema>;
+export type Schema = typeof dbSchema;

@@ -1,7 +1,7 @@
 import { SqliteApi } from '../src/SqliteApi';
-import { Database } from './kysely-schema';
+import { Schema } from './kysely-schema';
 
-export class TestApi extends SqliteApi<Database> {
+export class TestApi extends SqliteApi<Schema> {
   get TestUser() {
     return this.table('TestUser');
   }

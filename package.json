@@ -15,6 +15,7 @@
     "clean": "rm -rf ./dist/",
     "cm": "cz",
     "lint": "eslint ./src/ --fix",
+    "trace":"tsc --generateTrace trace --incremental false",
     "semantic-release": "semantic-release",
     "test": "vitest --single-thread --hideSkippedTests",
     "typecheck": "tsc --noEmit"

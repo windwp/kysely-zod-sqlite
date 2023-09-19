@@ -9,7 +9,15 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import { TypeOf, ZodAny, ZodObject, ZodType, z } from 'zod';
+import type {
+  objectUtil,
+  TypeOf,
+  ZodAny,
+  ZodObject,
+  ZodRawShape,
+  ZodType,
+} from 'zod';
+import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
@@ -29,10 +37,10 @@ import type {
 } from './types';
 import type { SetOptional } from 'type-fest';
 
-export class SqliteApi<Database extends Record<string, any>> {
-  readonly ky: Kysely<Database>;
+export class SqliteApi<Schema extends ZodObject<any, any, any>> {
+  readonly ky: Kysely<z.output<Schema>>;
   readonly config: DbConfig | FetchConfig;
-  readonly schema: z.ZodObject<any, any, any>;
+  readonly schema: Schema;
   readonly driver: Driver;
 
   constructor({
@@ -42,7 +50,7 @@ export class SqliteApi<Database extends Record<string, any>> {
   }: {
     config: DbConfig;
     driver: Driver;
-    schema: z.ZodObject<any, any, any>;
+    schema: Schema;
   }) {
     this.config = config;
     this.schema = schema;
@@ -51,7 +59,7 @@ export class SqliteApi<Database extends Record<string, any>> {
   }
 
   private initKysely(driver: Driver) {
-    return new Kysely<Database>({
+    return new Kysely<z.output<Schema>>({
       dialect: {
         createAdapter: () => new SqliteAdapter(),
         createIntrospector: o => new SqliteIntrospector(o),
@@ -60,7 +68,7 @@ export class SqliteApi<Database extends Record<string, any>> {
       },
       plugins: [
         new SqliteSerializePlugin({
-          schema: this.schema?.shape,
+          schema: (this.schema as any)?.shape,
           logger: this.config.logger,
         }),
       ],
@@ -94,10 +102,12 @@ export class SqliteApi<Database extends Record<string, any>> {
    */
   async batchOneSmt<
     V extends
-      | SelectQueryBuilder<Database, any, any>
-      | InsertQueryBuilder<Database, any, any>
+      | SelectQueryBuilder<z.output<Schema>, any, any>
+      | InsertQueryBuilder<z.output<Schema>, any, any>
   >(
-    sqlQuery: { compile: () => CompiledQuery<Database> } | RawBuilder<Database>,
+    sqlQuery:
+      | { compile: () => CompiledQuery<z.output<Schema>> }
+      | RawBuilder<z.output<Schema>>,
     batchParams: Array<any[]>,
     opts?: ApiOptions
   ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
@@ -108,7 +118,9 @@ export class SqliteApi<Database extends Record<string, any>> {
   }
 
   $batchOneSmt(
-    sqlQuery: { compile: () => CompiledQuery<Database> } | RawBuilder<Database>,
+    sqlQuery:
+      | { compile: () => CompiledQuery<z.output<Schema>> }
+      | RawBuilder<z.output<Schema>>,
     batchParams: Array<any[]>
   ): OneActionBody {
     const query = sqlQuery.compile(this.ky);
@@ -131,7 +143,7 @@ export class SqliteApi<Database extends Record<string, any>> {
    * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
    */
   async batchAllSmt(
-    sqlQuerys: Array<{ compile: () => CompiledQuery<Database> }>,
+    sqlQuerys: Array<{ compile: () => CompiledQuery<z.output<Schema>> }>,
     opts?: ApiOptions
   ) {
     const body = {
@@ -174,8 +186,8 @@ export class SqliteApi<Database extends Record<string, any>> {
     operations: {
       [key in V]:
         | OneActionBody
-        | { compile: () => CompiledQuery<Database> }
-        | RawBuilder<Database>
+        | { compile: () => CompiledQuery<z.output<Schema>> }
+        | RawBuilder<z.output<Schema>>
         | undefined;
     },
     opts?: ApiOptions & { isTransaction: boolean }
@@ -186,7 +198,9 @@ export class SqliteApi<Database extends Record<string, any>> {
       const value = operations[k as V];
       if (!value) return { key: k };
       if ((value as any).compile) {
-        const query: CompiledQuery<Database> = (value as any).compile(this.ky);
+        const query: CompiledQuery<z.output<Schema>> = (value as any).compile(
+          this.ky
+        );
         const table = (query.query as any).from?.froms[0]?.table.identifier
           ?.name;
         return {
@@ -219,17 +233,20 @@ export class SqliteApi<Database extends Record<string, any>> {
       error: data.error,
       getOne: <X = any>(
         key: V,
-        table?: keyof Database,
+        table?: keyof z.output<Schema>,
         extend?: ZodObject<any, any>
       ): X | undefined => {
         const v = data.rows.find(o => o.key === key);
         if (!v) return undefined;
         const name =
-          table ?? body.operations.find(o => o.key === key)?.table ?? '';
+          table ??
+          (body.operations.find(o => o.key === key)
+            ?.table as keyof z.output<Schema>);
+        if (!name) return undefined;
         if (Array.isArray(v.results)) {
-          return this.parseMany(v.results, name as any, extend)?.[0];
+          return this.parseMany(v.results, name, extend)?.[0];
         }
-        return this.parseOne(v.results, name as any, extend);
+        return this.parseOne(v.results, name, extend);
       },
       getMany: <X = any>(
         key: V,
@@ -247,31 +264,31 @@ export class SqliteApi<Database extends Record<string, any>> {
 
   parseOne<X = any>(
     data: any,
-    table: keyof Database,
-    extend?: ZodObject<any, any>
+    table: keyof z.output<Schema>,
+    extend?: ZodObject<any, any, any>
   ): X {
     let shape = this.schema?.shape[table]?.partial();
     if (!shape || !data) return data;
     if (extend) {
-      shape = shape.extend(extend);
+      shape = shape.extend(extend as any) as any;
     }
     return this.schema.shape[table]?.partial().parse(data) as X;
   }
 
   parseMany<X = any>(
     data: any[],
-    table: keyof Database,
+    table: keyof z.output<Schema>,
     extend?: ZodObject<any, any>
   ): X[] {
     let shape = this.schema?.shape[table]?.partial();
     if (!shape) return data;
     if (extend) {
-      shape = shape.extend(extend).shape;
+      shape = shape.extend(extend).shape as any;
     }
     return data.map(o => shape.parse(o)) as X[];
   }
 
-  table<K extends keyof Database & string>(
+  table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
       timeStamp?: boolean;
@@ -281,8 +298,8 @@ export class SqliteApi<Database extends Record<string, any>> {
     }
   ) {
     const ky = opts?.driver ? this.initKysely(opts?.driver) : this.ky;
-    return new PTable<Database[K], K>(
-      ky as Database[K],
+    return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
+      ky as z.output<Schema>[K],
       tableName,
       this.schema.shape[tableName],
       opts
@@ -307,25 +324,28 @@ export class SqliteApi<Database extends Record<string, any>> {
    * ```
    **/
   withTables<
-    T extends Record<string, ZodObject<any, any, any>>,
+    T extends ZodRawShape,
     ExtendApi extends {
-      [key: string]: (
-        api: SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }>
-      ) => PTable<any, any>;
-    }
+      [key: string]: (api: SqliteApi<ExtendSchema>) => PTable<any, any, any>;
+    },
+    ExtendSchema extends ZodObject<
+      z.input<Schema> & { [k in keyof T]: T[k] },
+      any,
+      any
+    >
   >(schema: T, extendApi?: ExtendApi) {
     const api = new SqliteApi({
       config: this.config,
       schema: this.schema.extend(schema),
       driver: this.driver,
-    }) as unknown as SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }>;
+    }) as any;
 
     if (extendApi) {
       for (const key in extendApi) {
         (api as any)[key] = extendApi[key](api);
       }
     }
-    return api as SqliteApi<Database & { [key in keyof T]: TypeOf<T[key]> }> & {
+    return api as SqliteApi<ExtendSchema> & {
       [key in keyof ExtendApi]: ReturnType<ExtendApi[key]>;
     };
   }
@@ -416,6 +436,7 @@ function mappingRelations<V>(
  */
 export class PTable<
   Table extends { id: string | number },
+  TableInput extends { id: string | number },
   TableName extends string
 > {
   private timeStamp: boolean;
@@ -499,14 +520,14 @@ export class PTable<
     return query.set((schema?.parse(opts.data) ?? opts.data) as any);
   }
 
-  async updateOne(opts: Query<Table> & { data: Partial<Table> }): Promise<{
+  async updateOne(opts: Query<Table> & { data: Partial<TableInput> }): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
     return await this.$updateOne(opts).executeTakeFirst();
   }
 
-  $updateOne(opts: Query<Table> & { data: Partial<Table> }) {
+  $updateOne(opts: Query<Table> & { data: Partial<TableInput> }) {
     let query = this.ky.updateTable(this.table);
     if (this.timeStamp) {
       (opts.data as any).updatedAt = new Date();
@@ -520,20 +541,22 @@ export class PTable<
     return query.set(opts.data as any);
   }
 
-  async insertOne(value: SetOptional<Table, 'id'>): Promise<Table | undefined> {
+  async insertOne(
+    value: SetOptional<TableInput, 'id'>
+  ): Promise<Table | undefined> {
     const check = await this.$insertOne(value).executeTakeFirst();
     if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
       if (!this.autoId && check.insertId && this.schema?.shape['id']) {
         value.id = Number(check.insertId);
       }
-      return value as Table;
+      return value as unknown as Table;
     }
     return undefined;
   }
 
-  $insertOne(value: SetOptional<Table, 'id'>) {
+  $insertOne(value: SetOptional<TableInput, 'id'>) {
     if (!value.id && this.autoId)
-      value.id = this.autoIdFnc(this.table, value as Table);
+      value.id = this.autoIdFnc(this.table, value as unknown as Table);
     const v = value as any;
     if (this.timeStamp) {
       if (!v.createdAt) v.createdAt = new Date();
@@ -550,7 +573,7 @@ export class PTable<
    * It use for a non unique key if a key is unique use InsertConflict
    */
   async upsert(opts: {
-    data: Partial<Table>;
+    data: Partial<TableInput>;
     where?: QueryWhere<Table>;
   }): Promise<Partial<Table> | undefined> {
     if (opts.data.id) {
@@ -558,17 +581,17 @@ export class PTable<
         where: { id: opts.data.id, ...opts.where } as QueryWhere<Table>,
         data: opts.data,
       });
-      return opts.data;
+      return opts.data as unknown as Table;
     }
     opts.data.id = this.autoIdFnc(this.table, opts.data);
     if (!opts.where) {
-      await this.insertOne(opts.data as Table);
-      return opts.data;
+      await this.insertOne(opts.data as TableInput);
+      return opts.data as unknown as Table;
     }
 
     const check = await this.selectFirst(opts);
     if (!check) {
-      return await this.insertOne(opts.data as Table);
+      return await this.insertOne(opts.data as TableInput);
     }
     await this.updateOne({ where: opts.where, data: opts.data });
     return opts.data as any;
