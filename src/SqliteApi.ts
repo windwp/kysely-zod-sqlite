@@ -1,4 +1,5 @@
 import {
+  ColumnType,
   CompiledQuery,
   Driver,
   InsertQueryBuilder,
@@ -9,14 +10,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import type {
-  objectUtil,
-  TypeOf,
-  ZodAny,
-  ZodObject,
-  ZodRawShape,
-  ZodType,
-} from 'zod';
+import type { objectUtil, ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
@@ -37,8 +31,16 @@ import type {
 } from './types';
 import type { SetOptional } from 'type-fest';
 
-export class SqliteApi<Schema extends ZodObject<any, any, any>> {
-  readonly ky: Kysely<z.output<Schema>>;
+export class SqliteApi<Schema extends ZodObject<any, any, any, any>> {
+  readonly ky: Kysely<{
+    [table in keyof z.output<Schema>]: {
+      [column in keyof z.output<Schema>[table]]: ColumnType<
+        z.output<Schema>[table][column],
+        z.input<Schema>[table][column],
+        z.input<Schema>[table][column]
+      >;
+    };
+  }>;
   readonly config: DbConfig | FetchConfig;
   readonly schema: Schema;
   readonly driver: Driver;
@@ -324,12 +326,12 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
    * ```
    **/
   withTables<
-    T extends ZodRawShape,
+    T extends { [k: string]: ZodTypeAny },
     ExtendApi extends {
       [key: string]: (api: SqliteApi<ExtendSchema>) => PTable<any, any, any>;
     },
     ExtendSchema extends ZodObject<
-      z.input<Schema> & { [k in keyof T]: T[k] },
+      objectUtil.extendShape<z.input<Schema>, T>,
       any,
       any
     >
@@ -338,11 +340,11 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       config: this.config,
       schema: this.schema.extend(schema),
       driver: this.driver,
-    }) as any;
+    });
 
     if (extendApi) {
       for (const key in extendApi) {
-        (api as any)[key] = extendApi[key](api);
+        (api as any)[key] = extendApi[key](api as any);
       }
     }
     return api as SqliteApi<ExtendSchema> & {
