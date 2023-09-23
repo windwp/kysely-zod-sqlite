@@ -91,8 +91,8 @@ export type Query<V> = {
 
 export type ExtractFieldsWithRelations<T> = {
   [K in keyof T as NonNullable<T[K]> extends
-    | { __relations: any }
-    | { __relations: any }[]
+    | { __relations?: any }
+    | { __relations?: any }[]
     ? IsAny<T[K]> extends true
       ? never
       : K
@@ -125,6 +125,16 @@ export type QueryRelations<V> = Query<V> & {
 export type BatchResult = {
   rows: { key: string; results: any[]; table: string }[];
   error?: any;
+};
+
+export type InsertTable<T extends { id: string | number }> = {
+  id?: T['id'] | undefined;
+} & {
+  [K in keyof T as NonNullable<T[K]> extends
+    | { __relations?: any }
+    | { __relations?: any }[]
+    ? never
+    : K]: T[K];
 };
 
 export type ExtractResultFromQuery<T> = T extends SelectQueryBuilder<

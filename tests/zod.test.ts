@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import { zBoolean, zDate, zJsonObject } from '../src';
 import { format } from 'date-fns';
+import { ExtractFieldsWithRelations } from '../src/types';
+import { PostTable, UserTable } from './kysely-schema';
 
 describe('test custom zod ', () => {
   it('should handle date ', async () => {
@@ -42,5 +44,17 @@ describe('test custom zod ', () => {
       });
       expect(v.data.config).toBe('1234');
     }
+  });
+  it('type check extract', async () => {
+    const check: ExtractFieldsWithRelations<UserTable> = {
+      posts: [],
+    };
+    check.posts?.[0];
+    const checkPost: ExtractFieldsWithRelations<PostTable> = {
+      user: {} as UserTable & { __relations: any },
+    };
+    checkPost.user?.id;
+    const user = {} as UserTable;
+    user.posts?.[0];
   });
 });

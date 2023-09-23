@@ -1,15 +1,15 @@
 # Feature 
 An flexible api for Cloudflare D1 and sqlite.
-It has an simple api of Prisma and a powerful query with Kysely.
 
-- [x] parse model by zod (for json string, boolean and datetime) 
+It has an simple api of Prisma and a powerful query with Kysely.
+runtime transform and validation model with zod.
+
+- [x] validation and parse model by zod (json text string on sqlite)
 - [x] remote proxy call from your app to worker or between worker by binding service
 - [x] api like primsa (support 1 level relation)
 - [x] unit testing D1 on local.
 
-
 # Install
-
 `npm install kysely-zod-sqlite`
 
 # Usage
@@ -34,10 +34,9 @@ export const userSchema = z.object({
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
   })), 
-  createdAt: zDate, // custom parse sqlite date
-  updatedAt: zDate,
-  isDelete: zBoolean, // parse boolean 1,0 or you can use z.coerce.boolean()
-
+  createdAt: zDate(), //custom parse sqlite date
+  updatedAt: zDate(),
+  isDelete: zBoolean(), // parse boolean 1,0 or you can use z.coerce.boolean()
 });
 export const postSchema = z.object({
   id: z.string(),
@@ -74,7 +73,7 @@ export const dbSchema = z.object({
 });
 export type DbSchema = typeof dbSchema;
 ```
-then you use that schema to define api
+use schema to define api
 ```typescript
 export class TestApi extends SqliteApi<DbSchema> {
   
@@ -122,7 +121,6 @@ const data = await api.ky // this is a reference of kysely builder
     .execute();
 ```
 ## Driver
-you can change the driver for different enviroment by inject a different driver on setup
 ### Local enviroment and unit test
 ```typescript
 import { BetterSqlite3Driver } from 'kysely-zod-sqlite/driver/sqlite-driver';
@@ -143,7 +141,8 @@ const api = new TestApi({
 ```
 ### Working outside cloudflare worker, pages
 You need to deploy a custom worker then you can connect to it on your app
-[worker remote](./example/worker/src/worker.ts)
+
+[worker](./example/worker/src/worker.ts)
 ```typescript
 import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
@@ -242,8 +241,9 @@ const users = result.getMany<UserTable>(0);
 const post = result.getOne<PostTable>(1);
 ```
 ### Bulk method
-working with array on batch method is difficult when you run query depend on some condition.
-so I create bulk
+working with array on batch method is difficult.
+when you run query depend on some condition so I create bulk.
+recommend use bulk for FetchDriver if you have multiple request
 ```typescript
 const check = await api.bulk({
   // skip that query for normal user
@@ -294,7 +294,7 @@ You can think is an API with zod for validation and kysely for query
 
 ### Different between using table vs kysely
 ``` typescript
-api.table('aaa').insertOne({...}) // validation input value with zod
+api.table('aaa').insertOne({...}) // validation runtime value with zod
 api.ky.insertInto('aaa').values({...}) // it is type checking
 ```
 
@@ -303,6 +303,12 @@ api.ky.insertInto('aaa').values({...}) // it is type checking
 api.table('aaa').selectMany() // you it to get data
 api.table('aaa').$selectMany() 
 // it is kysely query you can add more query or use on batch
+```
+
+### column is null
+if you set column can null you need to use nullable
+```typescript
+access_token: z.string().optional().nullable(),
 ```
 
 ### Parse custom schema on query with join

@@ -64,8 +64,8 @@ export function zRelationOne<T>(
   defaultValue?: T extends { parse: any } ? never : T
 ) {
   return z
-    .custom<T>()
-    .transform((v, ctx): T & { __relations?: TableRelation<T> } => {
+    .custom<T & { __relations?: any }>()
+    .transform((v, ctx): T => {
       if ((v as unknown) === '') return (defaultValue ?? {}) as any;
       if (!v || typeof v !== 'string') return v as any;
       try {
@@ -87,8 +87,8 @@ export function zRelationMany<T>(
   defaultValue?: T[] extends { parse: any } ? never : T[]
 ) {
   return z
-    .custom<Array<T>>()
-    .transform((v, ctx): Array<T & { __relations?: TableRelation<T> }> => {
+    .custom<Array<T & { __relations?: TableRelation<T> }>>()
+    .transform((v, ctx): Array<T > => {
       if ((v as unknown) === '') return (defaultValue as any) ?? [];
       if (!v || typeof v !== 'string') return v as any;
       try {

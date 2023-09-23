@@ -15,7 +15,7 @@
     "clean": "rm -rf ./dist/",
     "cm": "cz",
     "lint": "eslint ./src/ --fix",
-    "trace":"tsc --generateTrace trace --incremental false",
+    "trace": "tsc --generateTrace trace --incremental false",
     "semantic-release": "semantic-release",
     "test": "vitest --single-thread --hideSkippedTests",
     "typecheck": "tsc --noEmit"
@@ -156,6 +156,7 @@
     "prettier": "^2.2.1",
     "semantic-release": "^21.0.1",
     "ts-node": "^10.2.1",
+    "tsd": "^0.29.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.3"
   }

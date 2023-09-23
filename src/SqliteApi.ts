@@ -10,7 +10,13 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import type { objectUtil, ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
+import type {
+  objectUtil,
+  ZodAny,
+  ZodObject,
+  ZodType,
+  ZodTypeAny,
+} from 'zod';
 import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
@@ -31,7 +37,7 @@ import type {
 } from './types';
 import type { SetOptional } from 'type-fest';
 
-export class SqliteApi<Schema extends ZodObject<any, any, any, any>> {
+export class SqliteApi<Schema extends ZodObject<any, any, any>> {
   readonly ky: Kysely<{
     [table in keyof z.output<Schema>]: {
       [column in keyof z.output<Schema>[table]]: ColumnType<
@@ -310,7 +316,7 @@ export class SqliteApi<Schema extends ZodObject<any, any, any, any>> {
 
   /**
    * extend the origin zod schema
-   * it similar to withTables onkysely
+   * it similar to withTables on kysely
    *
    * ```typescript
    * const extendApi = api.withTables(
@@ -480,11 +486,11 @@ export class PTable<
     }
   }
 
-  selectMany(opts: QueryRelations<Table>) {
+  selectMany(opts: QueryRelations<TableInput>) {
     return this.$selectMany(opts).execute() as Promise<Table[]>;
   }
 
-  $selectMany(opts: QueryRelations<Table>) {
+  $selectMany(opts: QueryRelations<TableInput>) {
     let query = this.ky.selectFrom(this.table);
     query = mappingQueryOptions(query, opts);
     if (this.relations) {
@@ -493,14 +499,14 @@ export class PTable<
     return query;
   }
 
-  selectFirst(opts: QueryRelations<Table>) {
+  selectFirst(opts: QueryRelations<TableInput>) {
     opts.take = 1;
     return this.$selectMany(opts).executeTakeFirst() as Promise<
       Table | undefined
     >;
   }
 
-  $selectFirst(opts: QueryRelations<Table>) {
+  $selectFirst(opts: QueryRelations<TableInput>) {
     opts.take = 1;
     return this.$selectMany(opts);
   }
@@ -591,7 +597,7 @@ export class PTable<
       return opts.data as unknown as Table;
     }
 
-    const check = await this.selectFirst(opts);
+    const check = await this.selectFirst(opts as QueryRelations<TableInput>);
     if (!check) {
       return await this.insertOne(opts.data as TableInput);
     }
@@ -681,7 +687,7 @@ export class PTable<
 
   selectById(
     id: Table['id'],
-    select?: Readonly<{ [k in keyof Table]?: boolean }>
+    select?: Readonly<{ [k in keyof TableInput]?: boolean }>
   ) {
     return this.$selectById(id, select).executeTakeFirst() as Promise<
       Table | undefined
@@ -690,10 +696,10 @@ export class PTable<
 
   $selectById(
     id: Table['id'],
-    select?: Readonly<{ [k in keyof Table]?: boolean }>
+    select?: Readonly<{ [k in keyof TableInput]?: boolean }>
   ) {
     return this.$selectFirst({
-      where: { id } as QueryWhere<Table>,
+      where: { id } as QueryWhere<TableInput>,
       select,
     });
   }
