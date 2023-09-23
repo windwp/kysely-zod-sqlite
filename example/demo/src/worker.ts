@@ -39,7 +39,6 @@ export default {
 				},
 			},
 		});
-		const daa = await api.TestPost.selectFirst('dsaf');
 		if (user) {
 			await api.TestPost.insertOne({
 				name: 'fdsadfsa',
@@ -54,7 +53,7 @@ export default {
 				isPublished: false,
 			});
 		}
-		const users = await api.TestUser.selectMany({
+		await api.TestUser.selectMany({
 			include: {
 				posts: {
 					select: {
@@ -64,5 +63,11 @@ export default {
 				},
 			},
 		});
+		await api.ky
+			.selectFrom('TestUser')
+			.limit(1)
+			.innerJoin('TestPost', 'TestPost.userId', 'TestUser.id')
+			.selectAll()
+			.execute();
 	},
 };

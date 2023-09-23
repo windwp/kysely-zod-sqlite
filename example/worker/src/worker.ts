@@ -27,6 +27,7 @@ export default {
 		}
 
 		const body: any = await request.json();
+		// TODO validation body
 
 		try {
 			const result = await handler(env.D1_DB, body);
