@@ -1,11 +1,11 @@
-# Feature 
+# Intro 
 An flexible api for Cloudflare D1 and sqlite.
 
-It has an simple api of Prisma and a powerful query with Kysely.
-runtime transform and validation model with zod.
+It has an simple api of Prisma and a powerful query with Kysely, runtime transform and validation model with zod.
 
+# Feature
 - [x] validation and parse model by zod (json text string on sqlite)
-- [x] remote proxy call from your app to worker or between worker by binding service
+- [x] remote call from your local app to worker or between worker by binding service
 - [x] api like primsa (support 1 level relation)
 - [x] unit testing D1 on local.
 
@@ -14,7 +14,7 @@ runtime transform and validation model with zod.
 
 # Usage
 ### Define zod schema
-Define zod and use it for kysely model. Schema can be reuse on trpc router
+Define zod and use it for kysely model.
 
 ``` typescript 
 import {z} from zod
@@ -256,7 +256,7 @@ const check = await api.bulk({
     userId: userArr[0].id,
   }),
 });
-// It use **key - value** to retrieve result.
+// It use **key - value** to.
 const allUser = check.getMany<UserTable>('allUser'); 
 const allUser = check.getOne<any>('insert'); 
 
@@ -289,8 +289,7 @@ const check = await api.bulk({
 
 ### Is that library is a ORM?
 No, It just a wrapper around kysely. 
-
-You can think is an API with zod for validation and kysely for query
+You can think it is an API with zod for validation and kysely for query
 
 ### Different between using table vs kysely
 ``` typescript
@@ -300,13 +299,13 @@ api.ky.insertInto('aaa').values({...}) // it is type checking
 
 ### What is $ on table
 ```typescript
-api.table('aaa').selectMany() // you it to get data
+api.table('aaa').selectMany() // use it to get data
 api.table('aaa').$selectMany() 
-// it is kysely query you can add more query or use on batch
+// it is kysely query you can modify that query or use it on batch
 ```
 
 ### column is null
-if you set column can null you need to use nullable
+when your database column can null. you need to use nullable not optional on your model
 ```typescript
 access_token: z.string().optional().nullable(),
 ```
