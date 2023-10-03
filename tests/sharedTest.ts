@@ -679,6 +679,7 @@ export function runTest(api: TestApi) {
       },
       {
         testExtend: o => o.table('TestExtend'),
+        testUser: o => o.table('TestUser'),
       }
     );
     {
@@ -692,6 +693,13 @@ export function runTest(api: TestApi) {
         where: { name: 'testextend' },
       });
       expect(check?.id).toBeTruthy();
+    }
+    {
+      const check = await extendApi.ky
+        .selectFrom('TestOrder')
+        .select('name')
+        .executeTakeFirst();
+      expect(check?.name).toBeTruthy();
     }
   });
   it('should validate jsonschema', async () => {

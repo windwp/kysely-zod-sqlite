@@ -10,13 +10,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from 'kysely';
-import type {
-  objectUtil,
-  ZodAny,
-  ZodObject,
-  ZodType,
-  ZodTypeAny,
-} from 'zod';
+import type { ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
 import { uid } from './helpers/uid';
@@ -299,9 +293,9 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
   table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
+      driver?: Driver;
       timeStamp?: boolean;
       autoId?: boolean;
-      driver?: Driver;
       autoIdFnc?: (tableName?: string) => string;
     }
   ) {
@@ -310,7 +304,9 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       ky as z.output<Schema>[K],
       tableName,
       this.schema.shape[tableName],
-      opts
+      this.config.autoIdFnc
+        ? { ...opts, autoIdFnc: this.config.autoIdFnc }
+        : opts
     );
   }
 
@@ -337,9 +333,11 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       [key: string]: (api: SqliteApi<ExtendSchema>) => PTable<any, any, any>;
     },
     ExtendSchema extends ZodObject<
-      objectUtil.extendShape<z.input<Schema>, T>,
+      z.input<Schema> & T,
       any,
-      any
+      any,
+      z.input<Schema> & { [k in keyof T]: z.input<T[k]> },
+      z.output<Schema> & { [k in keyof T]: z.output<T[k]> }
     >
   >(schema: T, extendApi?: ExtendApi) {
     const api = new SqliteApi({
@@ -466,14 +464,10 @@ export class PTable<
     this.schema = schema;
     this.timeStamp =
       opts?.timeStamp ?? !!(this.schema?.shape as any)?.['updatedAt'];
+    this.autoIdFnc = opts?.autoIdFnc || (() => uid());
     this.autoId =
       opts?.autoId ??
       (this.schema?.shape['id']?._def as any)?.typeName === 'ZodString';
-    this.autoIdFnc =
-      opts?.autoIdFnc ||
-      function () {
-        return uid();
-      };
 
     this.relations = {};
     if (this.schema?.shape) {

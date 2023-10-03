@@ -8,6 +8,7 @@ export type DbConfig = {
   logger?: Logger;
   database?: string;
   options?: ApiOptions;
+  autoIdFnc?: (tableName: string, value: any) => string
 };
 export type FetchConfig = {
   apiUrl: string;
@@ -16,6 +17,7 @@ export type FetchConfig = {
   binding?: Fetcher;
   logger?: Logger;
   options?: ApiOptions;
+  autoIdFnc?: (tableName: string, value: any) => string
 };
 export type ApiOptions = {
   debugSql?: boolean;
