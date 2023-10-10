@@ -1,9 +1,12 @@
-import { SqliteApi } from '../src/SqliteApi';
+import { PTableFromSchema, SqliteApi } from '../src/SqliteApi';
 import { Schema } from './kysely-schema';
 
 export class TestApi extends SqliteApi<Schema> {
+  #user!: PTableFromSchema<Schema, 'TestUser'>;
   get TestUser() {
-    return this.table('TestUser');
+    if (this.#user) return this.#user;
+    this.#user = this.table('TestUser');
+    return this.#user;
   }
   get TestPost() {
     return this.table('TestPost');

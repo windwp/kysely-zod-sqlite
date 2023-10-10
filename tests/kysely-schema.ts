@@ -22,6 +22,7 @@ export const userSchema = z.object({
   name: z.string(),
   email: z.string(),
   data: zJsonObject<UserData>().optional(),
+  point: z.number().optional(),
   config: zJsonSchema(
     z
       .object({

@@ -12,6 +12,6 @@
     "wrangler": "^3.0.0"
   },
   "dependencies": {
-    "kysely-zod-sqlite": "^1.1.23"
+    "kysely-zod-sqlite": "^1.1.27"
   }
 }

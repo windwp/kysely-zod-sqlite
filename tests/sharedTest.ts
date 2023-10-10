@@ -77,6 +77,7 @@ export function runTest(api: TestApi) {
         id: testId,
         name: 'test',
         email: 'test@gmail.com',
+        point: 0,
         data: {
           value: 'value1',
           name: 'name1',
@@ -475,6 +476,7 @@ export function runTest(api: TestApi) {
       create: {
         name: 'check',
         email: 'test@gmail.com',
+        point: 0,
       },
       update: {
         name: 'test',
@@ -714,4 +716,22 @@ export function runTest(api: TestApi) {
     }).rejects.toThrowError();
   });
 
+  it('should update by sql syntax with updateOne', async () => {
+    const user = await api.TestUser.insertOne({
+      name: 'user01',
+      email: 'user011@gmail.com',
+      point: 1000,
+    });
+    const p = 10;
+    await api.TestUser.updateOne({
+      where: {
+        id: user?.id,
+      },
+      data: { point: sql`point + ${p}` },
+    });
+    const check = await api.TestUser.selectFirst({
+      where: { email: 'user011@gmail.com' },
+    });
+    expect(check?.point).toBe(1010);
+  });
 }

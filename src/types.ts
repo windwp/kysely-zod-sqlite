@@ -1,8 +1,9 @@
-import type { ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
+import type { ColumnType, ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
 import type { Logger } from 'loglevel';
 import type { ZodObject } from 'zod';
 import type { Fetcher } from '@cloudflare/workers-types';
 import { IsAny } from 'type-fest';
+import { z } from 'zod';
 
 export type DbConfig = {
   logger?: Logger;
@@ -90,6 +91,15 @@ export type Query<V> = {
   take?: number;
   orderBy?: {
     [k in keyof V]?: 'asc' | 'desc';
+  };
+};
+export type ZodSchemaToKysely<Schema extends ZodObject<any, any, any>> = {
+  [table in keyof z.output<Schema>]: {
+    [column in keyof z.output<Schema>[table]]: ColumnType<
+      z.output<Schema>[table][column],
+      z.input<Schema>[table][column],
+      z.input<Schema>[table][column]
+    >;
   };
 };
 

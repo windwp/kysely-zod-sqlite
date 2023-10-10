@@ -5,6 +5,7 @@ CREATE TABLE TestUser (
     email TEXT UNIQUE,
     data TEXT,
     config TEXT,
+    point INTEGER DEFAULT 0,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );

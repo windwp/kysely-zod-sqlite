@@ -1,5 +1,4 @@
 import {
-  ColumnType,
   CompiledQuery,
   Driver,
   InsertQueryBuilder,
@@ -9,6 +8,7 @@ import {
   SqliteAdapter,
   SqliteIntrospector,
   SqliteQueryCompiler,
+  UpdateObject,
 } from 'kysely';
 import type { ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
@@ -27,19 +27,12 @@ import type {
   QueryRelations,
   QueryWhere,
   TableRelation,
+  ZodSchemaToKysely,
 } from './types';
 import type { SetOptional } from 'type-fest';
 
 export class SqliteApi<Schema extends ZodObject<any, any, any>> {
-  readonly ky: Kysely<{
-    [table in keyof z.output<Schema>]: {
-      [column in keyof z.output<Schema>[table]]: ColumnType<
-        z.output<Schema>[table][column],
-        z.input<Schema>[table][column],
-        z.input<Schema>[table][column]
-      >;
-    };
-  }>;
+  readonly ky: Kysely<ZodSchemaToKysely<Schema>>;
   readonly config: DbConfig | FetchConfig;
   readonly schema: Schema;
   readonly driver: Driver;
@@ -512,34 +505,44 @@ export class PTable<
   }
 
   $updateMany(opts: Query<Table> & { data: Partial<Table> }) {
+    const data: any = opts.data;
     let query = this.ky.updateTable(this.table);
     query = mappingQueryOptions(query, opts, false);
     if (this.timeStamp) {
-      (opts.data as any).updatedAt = new Date();
+      data.updatedAt = new Date();
     }
     const schema = this.schema?.extend({ id: z.any() }).partial();
-    return query.set((schema?.parse(opts.data) ?? opts.data) as any);
+    return query.set(schema?.parse(data) ?? data);
   }
 
-  async updateOne(opts: Query<Table> & { data: Partial<TableInput> }): Promise<{
+  async updateOne(
+    opts: Query<Table> & {
+      data: UpdateObject<{ [k in TableName]: Table }, TableName>;
+    }
+  ): Promise<{
     numUpdatedRows: bigint;
     numChangedRows?: bigint;
   }> {
     return await this.$updateOne(opts).executeTakeFirst();
   }
 
-  $updateOne(opts: Query<Table> & { data: Partial<TableInput> }) {
+  $updateOne(
+    opts: Query<Table> & {
+      data: UpdateObject<{ [k in TableName]: Table }, TableName>;
+    }
+  ) {
+    const data: any = opts.data;
     let query = this.ky.updateTable(this.table);
     if (this.timeStamp) {
-      (opts.data as any).updatedAt = new Date();
+      data.updatedAt = new Date();
     }
     let selectQuery = this.ky.selectFrom(this.table);
     opts.take = 1;
     opts.select = { id: true };
     selectQuery = mappingQueryOptions(selectQuery, opts);
     query = query.where('id', 'in', selectQuery);
-    delete opts.data.id;
-    return query.set(opts.data as any);
+    delete data.id;
+    return query.set(data);
   }
 
   async insertOne(
@@ -577,25 +580,25 @@ export class PTable<
     data: Partial<TableInput>;
     where?: QueryWhere<Table>;
   }): Promise<Partial<Table> | undefined> {
-    if (opts.data.id) {
+    const data: any = opts.data;
+    if (data.id) {
       await this.updateOne({
         where: { id: opts.data.id, ...opts.where } as QueryWhere<Table>,
-        data: opts.data,
+        data,
       });
-      return opts.data as unknown as Table;
+      return data;
     }
-    opts.data.id = this.autoIdFnc(this.table, opts.data);
+    data.id = this.autoIdFnc(this.table, data);
     if (!opts.where) {
-      await this.insertOne(opts.data as TableInput);
-      return opts.data as unknown as Table;
+      return await this.insertOne(data);
     }
 
     const check = await this.selectFirst(opts as QueryRelations<TableInput>);
     if (!check) {
-      return await this.insertOne(opts.data as TableInput);
+      return await this.insertOne(data);
     }
-    await this.updateOne({ where: opts.where, data: opts.data });
-    return opts.data as any;
+    await this.updateOne({ where: opts.where, data });
+    return data;
   }
 
   /** conflicts columns should be a unique or primary key */
@@ -727,8 +730,13 @@ export class PTable<
   }
 }
 
-export type InferFromSqlApi<T> = T extends SqliteApi<infer K>
+export type InferSchemaFromSqlApi<T> = T extends SqliteApi<infer K>
   ? K extends Record<string, any>
     ? K
     : never
   : never;
+
+export type PTableFromSchema<
+  Schema extends ZodObject<any, any, any>,
+  K extends keyof z.output<Schema> & string
+> = PTable<z.output<Schema>[K], z.input<Schema>[K], K>;
