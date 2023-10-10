@@ -4,7 +4,7 @@ import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
-import { uid, zJsonSchema } from '../src';
+import { zJsonSchema } from '../src';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
@@ -21,7 +21,7 @@ async function testFixture(api: TestApi, numUser = 1) {
   await api.TestPost.deleteMany({});
   const userArr = Array.from({ length: numUser }).map((_, i) => {
     return {
-      id: uid(),
+      id: crypto.randomUUID(),
       name: `user${i}`,
       email: `email${i}@gmail.com`,
       data: {
@@ -36,7 +36,7 @@ async function testFixture(api: TestApi, numUser = 1) {
   await api.TestUser.insertMany(userArr);
   const postArr = Array.from({ length: numUser }).map((_, i) => {
     return {
-      id: uid(),
+      id: crypto.randomUUID(),
       name: 'post',
       data: '',
       isPublished: i % 2 === 0,
@@ -50,8 +50,6 @@ async function testFixture(api: TestApi, numUser = 1) {
 export function runTest(api: TestApi) {
   it('value type boolean should work', async () => {
     await testFixture(api, 4);
-    const v = uid();
-    expect(v.length).toBe(24);
     const check = await api.TestPost.selectMany({
       take: 2,
     });
@@ -174,14 +172,14 @@ export function runTest(api: TestApi) {
         updatedAt: new Date(),
       });
       expect(check?.id).toBeTruthy();
-      expect(check?.id?.length).toBe(24);
+      expect(check?.id?.length).toBe(36);
       expect(check?.createdAt instanceof Date).toBeTruthy();
       expect(check?.updatedAt instanceof Date).toBeTruthy();
     }
     {
       const postArr = Array.from({ length: 10 }).map((_, i) => {
         return {
-          id: uid(),
+          id: crypto.randomUUID(),
           name: 'crudPost',
           data: '',
           userId: userArr[i % 2].id,
@@ -370,7 +368,7 @@ export function runTest(api: TestApi) {
       const result = await api.batchAllSmt([
         api.ky.selectFrom('TestUser').selectAll(),
         api.ky.insertInto('TestPost').values({
-          id: uid(),
+          id: crypto.randomUUID(),
           name: 'post',
           data: '',
           isPublished: true,
@@ -715,4 +713,5 @@ export function runTest(api: TestApi) {
       });
     }).rejects.toThrowError();
   });
+
 }

@@ -7,8 +7,10 @@ import { IsAny } from 'type-fest';
 export type DbConfig = {
   logger?: Logger;
   database?: string;
-  options?: ApiOptions;
-  autoIdFnc?: (tableName: string, value: any) => string
+  /* auto generate uuid if id is zodString */
+  autoIdFnc?: (tableName: string, value: any) => string;
+  /* analyze performace of query and meta result */
+  analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
 };
 export type FetchConfig = {
   apiUrl: string;
@@ -17,10 +19,9 @@ export type FetchConfig = {
   binding?: Fetcher;
   logger?: Logger;
   options?: ApiOptions;
-  autoIdFnc?: (tableName: string, value: any) => string
+  autoIdFnc?: (tableName: string, value: any) => string;
 };
 export type ApiOptions = {
-  debugSql?: boolean;
   /* change request header */
   requestHeader?: (body: any) => Record<string, any>;
 };

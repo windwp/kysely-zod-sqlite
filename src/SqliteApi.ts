@@ -13,7 +13,6 @@ import {
 import type { ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
-import { uid } from './helpers/uid';
 import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
 import type {
@@ -464,7 +463,7 @@ export class PTable<
     this.schema = schema;
     this.timeStamp =
       opts?.timeStamp ?? !!(this.schema?.shape as any)?.['updatedAt'];
-    this.autoIdFnc = opts?.autoIdFnc || (() => uid());
+    this.autoIdFnc = opts?.autoIdFnc || (() => crypto.randomUUID());
     this.autoId =
       opts?.autoId ??
       (this.schema?.shape['id']?._def as any)?.typeName === 'ZodString';

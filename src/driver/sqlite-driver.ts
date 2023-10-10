@@ -9,6 +9,7 @@ import { Database } from 'better-sqlite3';
 
 interface BettterDriverConfig {
   logger?: any;
+  analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
 }
 export class BetterSqlite3Driver implements Driver {
   #config: BettterDriverConfig;
@@ -153,33 +154,37 @@ class BetterConnection implements DatabaseConnection {
           : 'run';
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
       ...rest,
     };
 
-    this.#config.logger?.debug(body);
-    if ((compiledQuery as any).opts?.showSql) {
-      this.#config.logger?.info(`SQL: ${body.sql}`);
-    }
+    const timeStart = this.#config.analyzeFnc ? performance.now() : 0;
 
     try {
       const results = handler(this.#db, body);
-      return Promise.resolve({
+
+      if (timeStart) {
+        this.#config.analyzeFnc?.({
+          sql: body.sql,
+          meta: results.meta,
+          time: performance.now() - timeStart,
+        });
+      }
+      return {
         insertId: results.results?.lastInsertRowid
           ? BigInt(results.results?.lastInsertRowid)
           : undefined,
         rows: results.results,
         numAffectedRows: results.results?.changes ?? undefined,
-      });
+      };
     } catch (error: any) {
-      this.#config.logger?.error('[SQL_ERROR=========================');
-      this.#config.logger?.error(error.message);
-      this.#config.logger?.error(body.sql);
-      this.#config.logger?.error(body.parameters);
-      this.#config.logger?.error('===================================]');
+      this.#config.logger?.error(`[SQL_ERROR=========================
+${error.message}
+${body.sql}
+${body.parameters}
+===================================]`);
       throw error;
     }
   }

@@ -137,20 +137,26 @@ class D1Connection implements DatabaseConnection {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
       database: this.#config.database,
       ...rest,
     };
-    if ((compiledQuery as any).opts?.showSql) {
-      this.#config.logger?.info(`SQL: ${body.sql}`);
-    }
-    this.#config.logger?.debug(body);
+
+    const timeStart = this.#config.analyzeFnc ? performance.now() : 0;
 
     try {
       const results = await handler(this.#d1, body);
+
+      if (timeStart) {
+        this.#config.analyzeFnc?.({
+          sql: body.sql,
+          meta: results.meta,
+          time: performance.now() - timeStart,
+        });
+      }
+
       const numAffectedRows =
         results.meta?.changes > 0 ? results.meta?.changes : undefined;
       return {
@@ -159,11 +165,11 @@ class D1Connection implements DatabaseConnection {
         numAffectedRows,
       };
     } catch (error: any) {
-      this.#config.logger?.error('[SQL_ERROR=========================');
-      this.#config.logger?.error(error.message);
-      this.#config.logger?.error(body.sql);
-      this.#config.logger?.error(body.parameters);
-      this.#config.logger?.error('===================================]');
+      this.#config.logger?.error(`[SQL_ERROR=========================
+${error.message}
+${body.sql}
+${body.parameters}
+===================================]`);
       return { rows: [], error: error };
     }
   }

@@ -126,15 +126,13 @@
   },
   "dependencies": {
     "date-fns": "^2.30.0",
-    "import": "^0.0.6",
     "kysely": "^0.26.3",
     "loglevel": "^1.8.1",
     "superjson": "^1.12.1",
-    "type-fest": "^3.11.0",
-    "uid": "^2.0.2",
     "zod": "^3.22.2"
   },
   "devDependencies": {
+    "type-fest": "^3.11.0",
     "@cloudflare/workers-types": "^4.20230814.0",
     "@ryansonshine/commitizen": "^4.2.8",
     "@ryansonshine/cz-conventional-changelog": "^3.3.4",
