@@ -7,6 +7,7 @@ import { IsAny } from 'type-fest';
 export type DbConfig = {
   logger?: Logger;
   database?: string;
+  options?: ApiOptions;
   /* auto generate uuid if id is zodString */
   autoIdFnc?: (tableName: string, value: any) => string;
   /* analyze performace of query and meta result */
