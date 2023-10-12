@@ -161,7 +161,7 @@ class BetterConnection implements DatabaseConnection {
     };
 
     const timeStart = this.#config.analyzeFnc ? performance.now() : 0;
-    this.#config.logger?.trace(body.sql);
+    this.#config.logger?.debug(body.sql);
 
     try {
       const results = handler(this.#db, body);
