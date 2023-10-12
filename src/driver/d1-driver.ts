@@ -145,6 +145,7 @@ class D1Connection implements DatabaseConnection {
     };
 
     const timeStart = this.#config.analyzeFnc ? performance.now() : 0;
+    this.#config.logger?.trace(body.sql);
 
     try {
       const results = await handler(this.#d1, body);

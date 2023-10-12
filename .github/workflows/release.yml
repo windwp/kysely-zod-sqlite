@@ -4,7 +4,7 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - release
 jobs:
   release:
     permissions:
