@@ -591,6 +591,7 @@ export function runTest(api: TestApi) {
     }
   });
   it('include with select', async () => {
+    await testFixture(api, 1);
     const data = await api.TestPost.selectFirst({
       select: {
         userId: true,

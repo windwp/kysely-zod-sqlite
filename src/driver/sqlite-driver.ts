@@ -4,13 +4,9 @@ import type {
   Driver,
   QueryResult,
 } from 'kysely';
-import { DataBody } from '../types';
+import type { BettterDriverConfig, DataBody } from '../types';
 import { Database } from 'better-sqlite3';
 
-interface BettterDriverConfig {
-  logger?: any;
-  analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
-}
 export class BetterSqlite3Driver implements Driver {
   #config: BettterDriverConfig;
   #db: Database;

@@ -88,7 +88,10 @@ const config = {};
 const api = new TestApi({
   schema: dbSchema,
   config: {},
-  driver: new D1Driver(env.D1_DB,config)
+  kysely: createKyselySqlite({
+    driver: new BetterDriver(new Database(':memory:'), config),
+    schema: dbSchema,
+  }),
 })
 ```
 ### Usage
@@ -127,7 +130,10 @@ import { BetterSqlite3Driver } from 'kysely-zod-sqlite/driver/sqlite-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
-  driver: new BetterDriver(new Database(':memory:'), config),
+  kysely: createKyselySqlite({
+    driver: new BetterDriver(new Database(':memory:'), config),
+    schema: dbSchema,
+  }),
 });
 ```
 ### Working inside worker and pages
@@ -136,7 +142,13 @@ import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
-  driver: new D1Driver(env.D1_DB, config),
+  kysely: createKyselySqlite({
+    driver: new FetchDriver({
+      apiKey: process.env.API_KEY!,
+      apiUrl: process.env.API_URL!,
+    }),
+    schema: dbSchema,
+  }),
 });
 ```
 ### Working outside cloudflare worker, pages
@@ -147,12 +159,13 @@ You need to deploy a custom worker then you can connect to it on your app
 import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
   config,
-  schema: dbSchema,
-  driver: new FetchDriver(env.D1_DB, {
-    apiUrl: 'https://{worker}.pages.dev', // your worker url
-    apiKey: 'test',
-    database: 'Test',
-    logger: logger,
+  schema: dbSchema, 
+  kysely: createKyselySqlite({
+    driver: new FetchDriver({
+      apiKey: process.env.API_KEY!,
+      apiUrl: process.env.API_URL!,
+    }),
+    schema: dbSchema,
   }),
 });
 ```
@@ -162,13 +175,15 @@ import { FetchDriver } from 'kysely-zod-sqlite/driver/fetch-driver';
 const api = new TestApi({
   config,
   schema: dbSchema,
-  driver: new FetchDriver(env.D1_DB, {
-    apiKey: 'test',
-    apiUrl: 'https://{worker}.pages.dev',
-    database: 'Test',
-    bindingService: env.WORKER_BINDING,
-    // it will use env.WORKER_BINDING.fetch not a global fetch
-    logger: loglevel,
+  kysely: createKyselySqlite({
+    driver: new FetchDriver(env.D1_DB, {
+      apiKey: 'test',
+      apiUrl: 'https://{worker}.pages.dev',
+      database: 'Test',
+      bindingService: env.WORKER_BINDING,
+      // it will use env.WORKER_BINDING.fetch not a global fetch
+    }),
+    schema: dbSchema,
   }),
 });
 ```

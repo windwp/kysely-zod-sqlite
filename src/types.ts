@@ -1,28 +1,34 @@
-import type { ColumnType, ComparisonOperatorExpression, SelectQueryBuilder } from 'kysely';
-import type { Logger } from 'loglevel';
+import type {
+  ColumnType,
+  ComparisonOperatorExpression,
+  SelectQueryBuilder,
+} from 'kysely';
 import type { ZodObject } from 'zod';
 import type { Fetcher } from '@cloudflare/workers-types';
-import { IsAny } from 'type-fest';
-import { z } from 'zod';
+import type { IsAny } from 'type-fest';
+import type { z } from 'zod';
+import type { Logger } from 'loglevel';
 
-export type DbConfig = {
-  logger?: Logger;
-  database?: string;
+export type ApiConfig = {
   options?: ApiOptions;
+  database?: string;
+  logger?: Logger;
   /* auto generate uuid if id is zodString */
   autoIdFnc?: (tableName: string, value: any) => string;
   /* analyze performace of query and meta result */
   analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
 };
-export type FetchConfig = {
+export type DbDriverConfig = ApiConfig;
+export type FetchDriverConfig = ApiConfig & {
   apiUrl: string;
   apiKey: string;
-  database?: string;
   binding?: Fetcher;
-  logger?: Logger;
-  options?: ApiOptions;
-  autoIdFnc?: (tableName: string, value: any) => string;
 };
+export type BettterDriverConfig = {
+  logger?: Logger;
+  analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
+};
+
 export type ApiOptions = {
   /* change request header */
   requestHeader?: (body: any) => Record<string, any>;

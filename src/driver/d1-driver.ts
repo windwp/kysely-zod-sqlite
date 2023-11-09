@@ -4,14 +4,14 @@ import type {
   Driver,
   QueryResult,
 } from 'kysely';
-import { DataBody, DbConfig } from '../types';
-import { D1Database, D1Result } from '@cloudflare/workers-types';
+import type { DataBody, DbDriverConfig } from '../types';
+import type { D1Database, D1Result } from '@cloudflare/workers-types';
 
 export class D1Driver implements Driver {
-  #config: DbConfig;
+  #config: DbDriverConfig;
   #d1: D1Database;
 
-  constructor(d1: D1Database, config: DbConfig) {
+  constructor(d1: D1Database, config: DbDriverConfig) {
     this.#config = config;
     this.#d1 = d1;
   }
@@ -120,10 +120,10 @@ export async function handler(
 }
 
 class D1Connection implements DatabaseConnection {
-  #config: DbConfig;
+  #config: DbDriverConfig;
   #d1: D1Database;
 
-  constructor(d1: D1Database, config: DbConfig) {
+  constructor(d1: D1Database, config: DbDriverConfig) {
     this.#d1 = d1;
     this.#config = config;
   }
@@ -177,6 +177,6 @@ ${body.parameters}
 
   // eslint-disable-next-line
   async *streamQuery<R>(): AsyncIterableIterator<QueryResult<R>> {
-    throw new Error('FetchConnection does not support streaming');
+    throw new Error('D1Connection does not support streaming');
   }
 }

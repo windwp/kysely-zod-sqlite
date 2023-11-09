@@ -1,27 +1,22 @@
 import {
   CompiledQuery,
-  Driver,
   InsertQueryBuilder,
   Kysely,
   RawBuilder,
   SelectQueryBuilder,
-  SqliteAdapter,
-  SqliteIntrospector,
-  SqliteQueryCompiler,
-  UpdateObject,
+  type UpdateObject,
 } from 'kysely';
 import type { ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
-import { SqliteSerializePlugin } from './serialize/sqlite-serialize-plugin';
 import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
+
 import type {
+  ApiConfig,
   ApiOptions,
   BatchResult,
   DataBody,
-  DbConfig,
   ExtractResultFromQuery,
-  FetchConfig,
   OneActionBody,
   Query,
   QueryRelations,
@@ -32,41 +27,19 @@ import type {
 import type { SetOptional } from 'type-fest';
 
 export class SqliteApi<Schema extends ZodObject<any, any, any>> {
-  readonly ky: Kysely<ZodSchemaToKysely<Schema>>;
-  readonly config: DbConfig | FetchConfig;
+  public ky!: Kysely<ZodSchemaToKysely<Schema>>;
+  readonly config: ApiConfig;
   readonly schema: Schema;
-  readonly driver: Driver;
 
-  constructor({
-    config,
-    schema,
-    driver,
-  }: {
-    config: DbConfig;
-    driver: Driver;
+  constructor(obj: {
+    config?: ApiConfig;
+    kysely: Kysely<ZodSchemaToKysely<Schema>>;
     schema: Schema;
+    withPlugin?: boolean;
   }) {
-    this.config = config;
-    this.schema = schema;
-    this.driver = driver;
-    this.ky = this.initKysely(this.driver);
-  }
-
-  private initKysely(driver: Driver) {
-    return new Kysely<z.output<Schema>>({
-      dialect: {
-        createAdapter: () => new SqliteAdapter(),
-        createIntrospector: o => new SqliteIntrospector(o),
-        createQueryCompiler: () => new SqliteQueryCompiler(),
-        createDriver: () => driver,
-      },
-      plugins: [
-        new SqliteSerializePlugin({
-          schema: (this.schema as any)?.shape,
-          logger: this.config.logger,
-        }),
-      ],
-    });
+    this.config = obj.config ?? {};
+    this.schema = obj.schema;
+    this.ky = obj.kysely;
   }
 
   protected execQuery(body: any, options?: ApiOptions) {
@@ -285,13 +258,13 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
   table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
-      driver?: Driver;
+      ky?: Kysely<ZodSchemaToKysely<Schema>>;
       timeStamp?: boolean;
       autoId?: boolean;
       autoIdFnc?: (tableName?: string) => string;
     }
   ) {
-    const ky = opts?.driver ? this.initKysely(opts?.driver) : this.ky;
+    const ky = opts?.ky || this.ky;
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
       tableName,
@@ -334,8 +307,9 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
   >(schema: T, extendApi?: ExtendApi) {
     const api = new SqliteApi({
       config: this.config,
-      schema: this.schema.extend(schema),
-      driver: this.driver,
+      schema: this.schema.extend(schema) as ExtendSchema,
+      kysely: this.ky as Kysely<ZodSchemaToKysely<ExtendSchema>>,
+      withPlugin: false,
     });
 
     if (extendApi) {

@@ -12,18 +12,18 @@ import { Logger } from 'loglevel';
 
 export interface SqliteSerializePluginOptions {
   serializer?: SerializeParametersTransformer;
-  schema?: any;
+  shape?: any;
   logger?: Logger;
 }
 
 export class SqliteSerializePlugin implements KyselyPlugin {
   private serializeParametersTransformer: SerializeParametersTransformer;
   private ctx: WeakMap<QueryId, string>;
-  private schema: any;
+  private shape: any;
   private logger?: Logger;
 
   public constructor(opt: SqliteSerializePluginOptions) {
-    this.schema = opt.schema;
+    this.shape = opt.shape;
     this.logger = opt.logger;
     this.serializeParametersTransformer = new SerializeParametersTransformer();
     this.ctx = new WeakMap();
@@ -42,11 +42,11 @@ export class SqliteSerializePlugin implements KyselyPlugin {
   }
 
   private parseResult(rows: any[], table: string) {
-    if (this.schema?.[table]) {
+    if (this.shape?.[table]) {
       try {
         return Promise.resolve(
           rows.map(row =>
-            row ? this.schema[table].partial().passthrough().parse(row) : row
+            row ? this.shape[table].partial().passthrough().parse(row) : row
           )
         );
       } catch (error: any) {
