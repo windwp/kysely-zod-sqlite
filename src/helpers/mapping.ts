@@ -73,7 +73,6 @@ export function mappingRelations<V>(
         relation.type == 'one'
           ? jsonHelpers.jsonObjectFrom
           : jsonHelpers.jsonArrayFrom;
-      console.log('fncJson', fncJson);
       query = query.select((eb: any) => [
         fncJson(
           eb

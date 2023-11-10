@@ -313,8 +313,6 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         [['user0'], ['user1']]
       );
 
-      console.log('check', check);
-
       expect(check.rows.length).toBe(2);
       expect(check.error).toBeFalsy();
 
