@@ -17,11 +17,11 @@ import type {
 } from 'kysely';
 import { defaultSerializer } from '../serialize/sqlite-serialize-transformer';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
+import { SqliteSerializePlugin } from '../serialize/sqlite-serialize-plugin';
 
 export class SqliteApi<
   Schema extends ZodObject<any, any, any>
 > extends PApi<Schema> {
-
   table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
@@ -237,10 +237,16 @@ export class SqliteApi<
       z.output<Schema> & { [k in keyof T]: z.output<T[k]> }
     >
   >(schema: T, extendApi?: ExtendApi) {
+    const newSchema = this.schema.extend(schema) as ExtendSchema;
     const api = new SqliteApi({
       config: this.config,
-      schema: this.schema.extend(schema) as ExtendSchema,
-      kysely: this.ky as Kysely<ZodSchemaToKysely<ExtendSchema>>,
+      schema: newSchema,
+      kysely: this.ky.withoutPlugins().withPlugin(
+        new SqliteSerializePlugin({
+          shape: newSchema.shape,
+          logger: this.config.logger,
+        })
+      ) as Kysely<ZodSchemaToKysely<ExtendSchema>>,
     });
 
     if (extendApi) {

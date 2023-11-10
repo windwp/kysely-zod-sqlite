@@ -6,6 +6,7 @@ import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
 import Database from 'better-sqlite3';
 import fs from 'fs';
+import { zDate } from '../src';
 
 export function getDb(): any {
   const db = new Database(':memory:');
@@ -687,6 +688,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         TestExtend: z.object({
           id: z.number(),
           name: z.string(),
+          createdAt: zDate(),
         }),
       },
       {
@@ -705,6 +707,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         where: { name: 'testextend' },
       });
       expect(check?.id).toBeTruthy();
+      expect(check?.createdAt instanceof Date).toBeTruthy();
     }
     // it can select the order table
     await extendApi.ky.selectFrom('TestOrder').select('name').execute();

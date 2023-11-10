@@ -48,4 +48,8 @@ CREATE TABLE
 DROP TABLE IF EXISTS "TestExtend";
 
 CREATE TABLE
-  "TestExtend" ("id" serial PRIMARY KEY, "name" varchar(100));
+  "TestExtend" (
+    "id" serial PRIMARY KEY,
+    "name" varchar(100),
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
