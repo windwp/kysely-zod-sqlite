@@ -2,12 +2,11 @@ import { describe } from 'vitest';
 import * as Cursor from 'pg-cursor';
 import fs from 'fs';
 import { Pool } from 'pg';
-import { TestApi } from './TestApi';
+import { TestPostgresApi } from './TestApi';
 import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
 import { Kysely, PostgresDialect } from 'kysely';
 import { runTest } from './sharedTest';
-import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 
 loglevel.setLevel(loglevel.levels.DEBUG);
 const pool = new Pool({
@@ -18,9 +17,9 @@ const pool = new Pool({
   max: 10,
 });
 
-const api = new TestApi({
+const api = new TestPostgresApi({
   schema: dbSchema,
-  config: { logger: loglevel },
+  config: { logger: loglevel, dialect: 'postgres' },
   kysely: new Kysely({
     dialect: new PostgresDialect({
       pool: pool,
@@ -28,10 +27,6 @@ const api = new TestApi({
     }),
     log: ['query'],
   }),
-  jsonHelpers: {
-    jsonArrayFrom,
-    jsonObjectFrom,
-  },
 });
 describe('postgresql', async () => {
   const connection = await pool.connect();

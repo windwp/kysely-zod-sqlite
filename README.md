@@ -277,18 +277,14 @@ const allUser = check.getOne<any>('insert');
 
 //prisma query can use on bulk too. You can even run batch inside of bulk 🥰
 const check = await api.bulk({
-  user: api.$batchOneSmt(
+  user:
     api.ky
       .updateTable('TestUser')
       .set({
         data: sql` json_set(data, '$.value', ?)`,
       })
       .where('name', '=', '?'),
-    [
-      ['aaa', 'user0'],
-      ['bbb', 'user1'],
-    ]
-  ),
+  ,
   topUser: api.TestUser.$selectMany({
     take: 10,
     include: {

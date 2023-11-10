@@ -1,21 +1,20 @@
 import { expect, it } from 'vitest';
-import { TestApi } from './TestApi';
+import { TestApi, TestPostgresApi } from './TestApi';
 import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
-import { zJsonSchema } from '../src';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
 export function getDb(): any {
   const db = new Database(':memory:');
-  const sqlFile = './migrations/0000_init.sql';
+  const sqlFile = './sql/sqlite.sql';
   db.exec(fs.readFileSync(sqlFile, 'utf-8'));
   return db;
 }
 
-async function testFixture(api: TestApi, numUser = 1) {
+async function testFixture(api: TestApi | TestPostgresApi, numUser = 1) {
   api.config.logger?.setLevel('silent');
   await api.TestUser.deleteMany({});
   await api.TestPost.deleteMany({});
@@ -47,7 +46,7 @@ async function testFixture(api: TestApi, numUser = 1) {
   api.config.logger?.setLevel('debug');
   return { userArr, postArr, user: userArr[0] };
 }
-export function runTest(api: TestApi, database = 'sqlite') {
+export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('value type boolean should work', async () => {
     await testFixture(api, 4);
     const check = await api.TestPost.selectMany({
@@ -101,7 +100,7 @@ export function runTest(api: TestApi, database = 'sqlite') {
       .set({ name: 'test' })
       .where('id', '=', testId)
       .executeTakeFirst();
-    expect(check.numUpdatedRows).toBe(BigInt(1));
+    expect(Number(check.numUpdatedRows)).toBe(1);
   });
   it('should insert with json', async () => {
     {
@@ -208,7 +207,7 @@ export function runTest(api: TestApi, database = 'sqlite') {
           userId: userArr[0].id,
         },
       });
-      expect(data.numUpdatedRows).toBe(5);
+      expect(Number(data.numUpdatedRows)).toBe(5);
     }
   });
 
@@ -307,14 +306,13 @@ export function runTest(api: TestApi, database = 'sqlite') {
         api.ky
           .updateTable('TestUser')
           .set({
-            data: sql` json_set(data, '$.value', ?)`,
+            point: sql`point + 1000`,
           })
-          .where('name', '=', '?'),
-        [
-          ['aaa', 'user0'],
-          ['bbb', 'user1'],
-        ]
+          .where('name', '=', api.param(1)),
+        [['user0'], ['user1']]
       );
+
+      console.log('check', check);
 
       expect(check.rows.length).toBe(2);
       expect(check.error).toBeFalsy();
@@ -324,19 +322,22 @@ export function runTest(api: TestApi, database = 'sqlite') {
           name: 'user0',
         },
       });
-      expect(check0?.data?.value).toBe('aaa');
+      expect(check0?.point).toBe(1000);
     }
     {
-      await api.batchOneSmt(sql`update TestUser set name = ? where id = ?`, [
-        ['user2', userArr[0].id],
-      ]);
+      await api.batchOneSmt(
+        sql`update "TestUser" set name = ${api.param(1)} where id = ${api.param(
+          2
+        )}`,
+        [['user2', userArr[0].id]]
+      );
     }
     {
       const { error } = await api.batchOneSmt(
         api.ky
           .updateTable('TestUser')
           .set({
-            data: sql` json_set(dataxx, '$.value', ?)`,
+            data: sql`json_set(dataxx, '$.value', ?)`,
           })
           .where('name', '=', 'xx'),
         [['aaa', 'user0']]
@@ -363,7 +364,7 @@ export function runTest(api: TestApi, database = 'sqlite') {
       })
     );
   });
-  it.only('batchAll should work ', async () => {
+  it('batchAll should work ', async () => {
     const { userArr } = await testFixture(api, 4);
     {
       const result = await api.batchAllSmt([
@@ -387,18 +388,32 @@ export function runTest(api: TestApi, database = 'sqlite') {
     const { userArr } = await testFixture(api, 4);
     {
       const check = await api.bulk({
-        user: api.$batchOneSmt(
-          api.ky
-            .updateTable('TestUser')
-            .set({
-              data: sql` json_set(data, '$.value', ?)`,
-            })
-            .where('name', '=', '?'),
-          [
-            ['aaa', 'user0'],
-            ['bbb', 'user1'],
-          ]
-        ),
+        user:
+          dialect === 'sqlite'
+            ? api.$batchOneSmt(
+                api.ky
+                  .updateTable('TestUser')
+                  .where('name', '=', '?')
+                  .set({
+                    data: sql` json_set(data, '$.value', ?)`,
+                  }),
+                [
+                  ['aaa', 'user0'],
+                  ['bbb', 'user1'],
+                ]
+              )
+            : api.$batchOneSmt(
+                api.ky
+                  .updateTable('TestUser')
+                  .where('name', '=', '$1')
+                  .set({
+                    data: sql`jsonb_set(data, '{value}', $2)`,
+                  }),
+                [
+                  ['user0', '"aaa"'],
+                  ['user1', '"bbb"'],
+                ]
+              ),
         topUser: api.TestUser.$selectMany({
           take: 10,
           include: {
@@ -419,6 +434,10 @@ export function runTest(api: TestApi, database = 'sqlite') {
       expect(user?.posts?.[0]?.id).toBeTruthy();
       const value = check.getOne('check');
       expect(value).toBe(undefined);
+      const user0 = await api.TestUser.selectFirst({
+        where: { name: 'user0' },
+      });
+      expect(user0?.data?.value).toBe('aaa');
     }
   });
 
@@ -573,7 +592,7 @@ export function runTest(api: TestApi, database = 'sqlite') {
       .select(sql.raw('10 as dynamic') as any)
       .execute();
 
-    if (database === 'sqlite') {
+    if (dialect === 'sqlite') {
       expect(typeof data[0].data === 'string').toBeTruthy();
     }
     {

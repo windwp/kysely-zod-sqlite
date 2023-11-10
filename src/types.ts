@@ -10,6 +10,8 @@ import type { z } from 'zod';
 import type { Logger } from 'loglevel';
 
 export type ApiConfig = {
+  dialect?: string;
+  paramPlaceholder?: string;
   options?: ApiOptions;
   database?: string;
   logger?: Logger;

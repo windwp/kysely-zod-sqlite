@@ -1,20 +1,17 @@
-import {
+import type {
   CompiledQuery,
   InsertQueryBuilder,
   Kysely,
   RawBuilder,
   SelectQueryBuilder,
-  type UpdateObject,
+  UpdateObject,
 } from 'kysely';
 import type { ZodAny, ZodObject, ZodType, ZodTypeAny } from 'zod';
 import { z } from 'zod';
-import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/sqlite';
-import { defaultSerializer } from './serialize/sqlite-serialize-transformer';
 
 import type {
   ApiConfig,
   ApiOptions,
-  BatchResult,
   DataBody,
   ExtractResultFromQuery,
   OneActionBody,
@@ -23,17 +20,14 @@ import type {
   QueryWhere,
   TableRelation,
   ZodSchemaToKysely,
-} from './types';
+} from '../types';
 import type { SetOptional } from 'type-fest';
+import { mappingQueryOptions, mappingRelations } from '../helpers/mapping.js';
 
-export class SqliteApi<Schema extends ZodObject<any, any, any>> {
+export abstract class PApi<Schema extends ZodObject<any, any, any>> {
   public ky!: Kysely<ZodSchemaToKysely<Schema>>;
   readonly config: ApiConfig;
   readonly schema: Schema;
-  readonly #jsonHelpers: {
-    jsonArrayFrom: (query: any) => any;
-    jsonObjectFrom: (query: any) => any;
-  };
 
   constructor(obj: {
     config?: ApiConfig;
@@ -47,7 +41,9 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
     this.config = obj.config ?? {};
     this.schema = obj.schema;
     this.ky = obj.kysely;
-    this.#jsonHelpers = obj.jsonHelpers || { jsonObjectFrom, jsonArrayFrom };
+    this.config.dialect ??= 'sqlite';
+    this.config.paramPlaceholder =
+      this.config.dialect == 'postgres' ? '$' : '?';
   }
 
   protected execQuery(body: any, options?: ApiOptions) {
@@ -67,171 +63,6 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       parameters: query.parameters,
     };
     return this.execQuery(body, opts);
-  }
-
-  /**
-   * only working cloudflare D1 and sqlite
-   * use this api to execute one sql query with multiple parameters
-   * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
-   * @param batchParams  order of params is not automatic like what kysely does
-   */
-  async batchOneSmt<
-    V extends
-      | SelectQueryBuilder<z.output<Schema>, any, any>
-      | InsertQueryBuilder<z.output<Schema>, any, any>
-  >(
-    sqlQuery:
-      | { compile: () => CompiledQuery<z.output<Schema>> }
-      | RawBuilder<z.output<Schema>>,
-    batchParams: Array<any[]>,
-    opts?: ApiOptions
-  ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
-    return await this.execQuery(
-      this.$batchOneSmt(sqlQuery, batchParams),
-      opts
-    ).catch((e: any) => ({ rows: [], error: e }));
-  }
-
-  $batchOneSmt(
-    sqlQuery:
-      | { compile: () => CompiledQuery<z.output<Schema>> }
-      | RawBuilder<z.output<Schema>>,
-    batchParams: Array<any[]>
-  ): OneActionBody {
-    const query = sqlQuery.compile(this.ky);
-    batchParams.forEach(o => {
-      if (Array.isArray(o)) {
-        o.forEach((v, index) => {
-          o[index] = defaultSerializer(v);
-        });
-      }
-    });
-    return {
-      action: 'batchOneSmt',
-      sql: query.sql,
-      parameters: batchParams,
-    };
-  }
-
-  /*
-   * only working cloudflare D1 and sqlite
-   * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
-   */
-  async batchAllSmt(
-    sqlQuerys: Array<{ compile: () => CompiledQuery<z.output<Schema>> }>,
-    opts?: ApiOptions
-  ) {
-    const body = {
-      action: 'batchAllSmt',
-      batch: sqlQuerys.map(o => {
-        const v = o.compile();
-        const table = (v.query as any).from?.froms[0]?.table.identifier?.name;
-        return {
-          sql: v.sql,
-          parameters: v.parameters,
-          action: v.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          table: table,
-        };
-      }),
-    };
-    const data: { rows: any[]; error?: any } = await this.execQuery(
-      body,
-      opts
-    ).catch((e: any) => ({ rows: [], error: e }));
-    return {
-      error: data.error,
-      rows: data.rows,
-      getOne: <X = any>(index: number): X | undefined => {
-        if (Array.isArray(data.rows[index])) {
-          return this.parseMany(data.rows[index], body.batch[index].table)?.[0];
-        }
-        return this.parseOne(data.rows[index], body.batch[index].table);
-      },
-      getMany: <X = any>(index: number): X[] => {
-        return this.parseMany(data.rows[index], body.batch[index].table);
-      },
-    };
-  }
-
-  /*
-   * some time you just want to send multiple sql query and get results
-   * this will reduce a latency if you send it to across worker.
-   */
-  async bulk<V extends string>(
-    operations: {
-      [key in V]:
-        | OneActionBody
-        | { compile: () => CompiledQuery<z.output<Schema>> }
-        | RawBuilder<z.output<Schema>>
-        | undefined;
-    },
-    opts?: ApiOptions & { isTransaction: boolean }
-  ) {
-    const ops: Array<OneActionBody & { key: string }> = Object.keys(
-      operations
-    ).map((k: any) => {
-      const value = operations[k as V];
-      if (!value) return { key: k };
-      if ((value as any).compile) {
-        const query: CompiledQuery<z.output<Schema>> = (value as any).compile(
-          this.ky
-        );
-        const table = (query.query as any).from?.froms[0]?.table.identifier
-          ?.name;
-        return {
-          key: k,
-          sql: query.sql,
-          table: table,
-          action: query.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run',
-          parameters: query.parameters,
-        };
-      }
-      return {
-        key: k,
-        ...value,
-      } as any;
-    });
-    const body: DataBody = {
-      action: 'bulks',
-      isTransaction: opts?.isTransaction ?? false,
-      operations: ops.filter(o => o.action),
-    };
-    const data: BatchResult = await this.execQuery(body, opts).catch(
-      (e: any) => ({ rows: [], error: e })
-    );
-
-    return {
-      data: data.rows,
-      error: data.error,
-      getOne: <X = any>(
-        key: V,
-        table?: keyof z.output<Schema>,
-        extend?: ZodObject<any, any>
-      ): X | undefined => {
-        const v = data.rows.find(o => o.key === key);
-        if (!v) return undefined;
-        const name =
-          table ??
-          (body.operations.find(o => o.key === key)
-            ?.table as keyof z.output<Schema>);
-        if (!name) return undefined;
-        if (Array.isArray(v.results)) {
-          return this.parseMany(v.results, name, extend)?.[0];
-        }
-        return this.parseOne(v.results, name, extend);
-      },
-      getMany: <X = any>(
-        key: V,
-        table?: string,
-        extend?: ZodObject<any, any>
-      ): X[] => {
-        const v = data.rows.find(o => o.key === key);
-        if (!v) return [];
-        const name =
-          table ?? body.operations.find(o => o.key === key)?.table ?? '';
-        return this.parseMany(v.results, name as any, extend);
-      },
-    };
   }
 
   parseOne<X = any>(
@@ -260,7 +91,13 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
     return data.map(o => shape.parse(o)) as X[];
   }
 
-  table<K extends keyof z.output<Schema> & string>(
+  param(index: number): string {
+    return this.config.dialect != 'sqlite'
+      ? this.config.paramPlaceholder! + index
+      : this.config.paramPlaceholder!;
+  }
+
+  abstract table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
       ky?: Kysely<ZodSchemaToKysely<Schema>>;
@@ -268,19 +105,55 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       autoId?: boolean;
       autoIdFnc?: (tableName?: string) => string;
     }
-  ) {
-    const ky = opts?.ky || this.ky;
-    return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
-      ky as z.output<Schema>[K],
-      tableName,
-      this.#jsonHelpers,
-      this.schema.shape[tableName],
-      this.config.autoIdFnc
-        ? { ...opts, autoIdFnc: this.config.autoIdFnc }
-        : opts
-    );
-  }
+  ): PTable<z.output<Schema>[K], z.input<Schema>[K], K>;
 
+  abstract batchOneSmt<
+    V extends
+      | SelectQueryBuilder<z.output<Schema>, any, any>
+      | InsertQueryBuilder<z.output<Schema>, any, any>
+  >(
+    sqlQuery:
+      | { compile: () => CompiledQuery<z.output<Schema>> }
+      | RawBuilder<z.output<Schema>>,
+    batchParams: Array<any[]>,
+    opts?: ApiOptions
+  ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }>;
+
+  abstract $batchOneSmt(
+    sqlQuery:
+      | { compile: () => CompiledQuery<z.output<Schema>> }
+      | RawBuilder<z.output<Schema>>,
+    batchParams: Array<any[]>
+  ): OneActionBody;
+
+  /*
+   * only working cloudflare D1 and sqlite
+   * https://developers.cloudflare.com/d1/platform/client-api/#dbbatch
+   */
+  abstract batchAllSmt(
+    sqlQuerys: Array<{ compile: () => CompiledQuery<z.output<Schema>> }>,
+    opts?: ApiOptions
+  ): Promise<{
+    error: any;
+    rows: any[];
+    getOne: <X = any>(index: number) => X | undefined;
+    getMany: <X = any>(index: number) => X[];
+  }>;
+
+  /*
+   * some time you just want to send multiple sql query and get results
+   * this will reduce a latency if you send it to across worker.
+   */
+  abstract bulk<V extends string>(
+    operations: {
+      [key in V]:
+        | OneActionBody
+        | { compile: () => CompiledQuery<z.output<Schema>> }
+        | RawBuilder<z.output<Schema>>
+        | undefined;
+    },
+    opts?: ApiOptions & { isTransaction: boolean }
+  ): Promise<{}>;
   /**
    * extend the origin zod schema
    * it similar to withTables on kysely
@@ -298,10 +171,10 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
    *   })
    * ```
    **/
-  withTables<
+  abstract withTables<
     T extends { [k: string]: ZodTypeAny },
     ExtendApi extends {
-      [key: string]: (api: SqliteApi<ExtendSchema>) => PTable<any, any, any>;
+      [key: string]: (api: PApi<ExtendSchema>) => PTable<any, any, any>;
     },
     ExtendSchema extends ZodObject<
       z.input<Schema> & T,
@@ -310,109 +183,12 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       z.input<Schema> & { [k in keyof T]: z.input<T[k]> },
       z.output<Schema> & { [k in keyof T]: z.output<T[k]> }
     >
-  >(schema: T, extendApi?: ExtendApi) {
-    const api = new SqliteApi({
-      config: this.config,
-      schema: this.schema.extend(schema) as ExtendSchema,
-      kysely: this.ky as Kysely<ZodSchemaToKysely<ExtendSchema>>,
-    });
-
-    if (extendApi) {
-      for (const key in extendApi) {
-        (api as any)[key] = extendApi[key](api as any);
-      }
-    }
-    return api as SqliteApi<ExtendSchema> & {
-      [key in keyof ExtendApi]: ReturnType<ExtendApi[key]>;
-    };
-  }
-}
-
-function mappingQueryOptions<V>(
-  query: any,
-  opts: QueryRelations<V>,
-  autoSelecAll = true
-) {
-  if (autoSelecAll) {
-    if (opts.select) {
-      const columns = Object.keys(opts.select).filter(k => {
-        return opts.select?.[k as keyof V];
-      });
-      query = query.select(columns);
-    } else {
-      query = query.selectAll();
-    }
-  }
-  if (opts.where) {
-    for (const key in opts.where) {
-      if (typeof opts.where[key] === 'object') {
-        query = query.where(
-          key,
-          Object.keys(opts.where[key] as any)[0],
-          Object.values(opts.where[key] as any)[0]
-        );
-      } else {
-        if (opts.where[key] === undefined || opts.where[key] === null) {
-          const cl: any = structuredClone(opts.where);
-          cl[key] = '<------ Error';
-          throw new Error(
-            `select value of '${key}' is null ${JSON.stringify(cl, null, 2)}`
-          );
-        }
-        query = query.where(key, '=', opts.where[key]);
-      }
-    }
-  }
-  if (opts?.skip) query = query.offset(opts.skip);
-  if (opts?.take) query = query.limit(opts.take);
-  if (opts?.orderBy) {
-    for (const key in opts.orderBy) {
-      query = query.orderBy(key, opts.orderBy[key]);
-    }
-  }
-
-  return query;
-}
-function mappingRelations<V>(
-  query: any,
-  table: string,
-  relations: { [k: string]: TableRelation },
-  opts: QueryRelations<V>,
-  jsonHelpers: {
-    jsonArrayFrom: (query: any) => any;
-    jsonObjectFrom: (query: any) => any;
-  }
-) {
-  if (opts.include) {
-    for (const key in opts.include) {
-      const relation = relations[key];
-      const select = opts.include[key];
-      if (!relation) throw new Error(`relation [${key}] not found`);
-      const columns =
-        typeof select === 'boolean'
-          ? Object.keys(relation.schema?.shape)
-          : Object.keys((select as any)?.select);
-      if (!columns || columns.length == 0) {
-        throw new Error(
-          'you need input schema for table or define a column to select '
-        );
-      }
-      const fncJson: any =
-        relation.type == 'one'
-          ? jsonHelpers.jsonObjectFrom
-          : jsonHelpers.jsonArrayFrom;
-      console.log('fncJson', fncJson);
-      query = query.select((eb: any) => [
-        fncJson(
-          eb
-            .selectFrom(relation.table)
-            .select(columns)
-            .whereRef(`${table}.${relation.ref}`, '=', relation.refTarget)
-        ).as(key),
-      ]);
-    }
-  }
-  return query;
+  >(
+    schema: T,
+    extendApi?: ExtendApi
+  ): PApi<ExtendSchema> & {
+    [key in keyof ExtendApi]: ReturnType<ExtendApi[key]>;
+  };
 }
 
 /**
@@ -544,17 +320,17 @@ export class PTable<
   async insertOne(
     value: SetOptional<TableInput, 'id'>
   ): Promise<Table | undefined> {
-    const check: any = await this.$insertOne(value).executeTakeFirst();
-    if (check?.id) {
-      value.id = check.id;
+    const check: any = await this.$insertOne(value).execute();
+    if (value.id) {
       return value as unknown as Table;
-    } else if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
-      if (!this.autoId && check.insertId && this.schema?.shape['id']) {
-        value.id = Number(check.insertId);
+    } else if (check?.changes == BigInt(1)) {
+      if (check.lastInsertRowid && this.schema?.shape['id']) {
+        value.id = Number(check.lastInsertRowid);
       }
-      return value as unknown as Table;
+    } else if (Array.isArray(check)) {
+      value.id = check[0].id;
     }
-    return undefined;
+    return value as unknown as Table;
   }
 
   $insertOne(value: SetOptional<TableInput, 'id'>) {
@@ -637,11 +413,22 @@ export class PTable<
 
   async insertMany(values: Array<Partial<Table>>): Promise<Table[]> {
     if (values.length == 0) return [];
-    const result = await this.$insertMany(values).execute();
+    const result: any = await this.$insertMany(values).execute();
     if (this.autoId) return values as any;
-    result.forEach((o: any, index) => {
-      values[index].id = o.id;
-    });
+    if (Array.isArray(result)) {
+      result.forEach((o: any, index) => {
+        values[index].id = o.id;
+      });
+      return values as Table[];
+    } else if (result?.changes == BigInt(values.length)) {
+      if (!this.autoId) {
+        // not sure about this
+        values.forEach((o, index) => {
+          o.id = Number(result.lastInsertRowid) - values.length + index + 1;
+        });
+      }
+      return values as Table[];
+    }
     return values as Table[];
   }
 
@@ -733,12 +520,11 @@ export class PTable<
   }
 }
 
-export type InferSchemaFromSqlApi<T> = T extends SqliteApi<infer K>
+export type InferSchemaFromPApi<T> = T extends PApi<infer K>
   ? K extends Record<string, any>
     ? K
     : never
   : never;
-
 export type PTableFromSchema<
   Schema extends ZodObject<any, any, any>,
   K extends keyof z.output<Schema> & string

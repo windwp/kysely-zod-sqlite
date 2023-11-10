@@ -7,8 +7,8 @@ CREATE TABLE
     "id" varchar(36) PRIMARY KEY,
     "name" varchar(100),
     "email" varchar(360) UNIQUE,
-    "data" json,
-    "config" json,
+    "data" jsonb,
+    "config" jsonb,
     "point" INTEGER DEFAULT 0,
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP

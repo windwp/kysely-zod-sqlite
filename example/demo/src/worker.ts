@@ -1,4 +1,4 @@
-import { SqliteApi } from 'kysely-zod-sqlite';
+import { SqliteApi, createKyselySqlite } from 'kysely-zod-sqlite';
 import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
 import { dbSchema, DbSchema } from './schema';
 import logger from 'loglevel';
@@ -21,7 +21,10 @@ export default {
 		const api = new TestApi({
 			schema: dbSchema,
 			config: config,
-			driver: new D1Driver(env.D1_DB, config),
+			kysely: createKyselySqlite({
+				driver: new D1Driver(env.D1_DB, config),
+				schema: dbSchema,
+			}),
 		});
 		await api.TestUser.deleteMany({});
 		const user = await api.TestUser.insertOne({
