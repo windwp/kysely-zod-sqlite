@@ -1,9 +1,9 @@
 name: Release
+
 on:
-  workflow_call:
-    secrets:
-      NPM_TOKEN:
-        required: true
+  push:
+    branches:
+      - release
 
 jobs:
   release:
