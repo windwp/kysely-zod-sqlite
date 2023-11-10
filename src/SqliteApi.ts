@@ -30,16 +30,24 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
   public ky!: Kysely<ZodSchemaToKysely<Schema>>;
   readonly config: ApiConfig;
   readonly schema: Schema;
+  readonly #jsonHelpers: {
+    jsonArrayFrom: (query: any) => any;
+    jsonObjectFrom: (query: any) => any;
+  };
 
   constructor(obj: {
     config?: ApiConfig;
     kysely: Kysely<ZodSchemaToKysely<Schema>>;
     schema: Schema;
-    withPlugin?: boolean;
+    jsonHelpers?: {
+      jsonArrayFrom: (query: any) => any;
+      jsonObjectFrom: (query: any) => any;
+    };
   }) {
     this.config = obj.config ?? {};
     this.schema = obj.schema;
     this.ky = obj.kysely;
+    this.#jsonHelpers = obj.jsonHelpers || { jsonObjectFrom, jsonArrayFrom };
   }
 
   protected execQuery(body: any, options?: ApiOptions) {
@@ -189,10 +197,7 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       operations: ops.filter(o => o.action),
     };
     const data: BatchResult = await this.execQuery(body, opts).catch(
-      (e: any) => ({
-        rows: [],
-        error: e,
-      })
+      (e: any) => ({ rows: [], error: e })
     );
 
     return {
@@ -268,6 +273,7 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
       tableName,
+      this.#jsonHelpers,
       this.schema.shape[tableName],
       this.config.autoIdFnc
         ? { ...opts, autoIdFnc: this.config.autoIdFnc }
@@ -309,7 +315,6 @@ export class SqliteApi<Schema extends ZodObject<any, any, any>> {
       config: this.config,
       schema: this.schema.extend(schema) as ExtendSchema,
       kysely: this.ky as Kysely<ZodSchemaToKysely<ExtendSchema>>,
-      withPlugin: false,
     });
 
     if (extendApi) {
@@ -372,7 +377,11 @@ function mappingRelations<V>(
   query: any,
   table: string,
   relations: { [k: string]: TableRelation },
-  opts: QueryRelations<V>
+  opts: QueryRelations<V>,
+  jsonHelpers: {
+    jsonArrayFrom: (query: any) => any;
+    jsonObjectFrom: (query: any) => any;
+  }
 ) {
   if (opts.include) {
     for (const key in opts.include) {
@@ -389,7 +398,10 @@ function mappingRelations<V>(
         );
       }
       const fncJson: any =
-        relation.type == 'one' ? jsonObjectFrom : jsonArrayFrom;
+        relation.type == 'one'
+          ? jsonHelpers.jsonObjectFrom
+          : jsonHelpers.jsonArrayFrom;
+      console.log('fncJson', fncJson);
       query = query.select((eb: any) => [
         fncJson(
           eb
@@ -418,6 +430,10 @@ export class PTable<
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,
+    private readonly jsonHelpers: {
+      jsonArrayFrom: (query: any) => any;
+      jsonObjectFrom: (query: any) => any;
+    },
     private readonly schema?: ZodObject<{
       [k in keyof Table]: ZodType<Table[k]>;
     }>,
@@ -454,7 +470,13 @@ export class PTable<
     let query = this.ky.selectFrom(this.table);
     query = mappingQueryOptions(query, opts);
     if (this.relations) {
-      query = mappingRelations(query, this.table, this.relations, opts);
+      query = mappingRelations(
+        query,
+        this.table,
+        this.relations,
+        opts,
+        this.jsonHelpers
+      );
     }
     return query;
   }
@@ -522,8 +544,11 @@ export class PTable<
   async insertOne(
     value: SetOptional<TableInput, 'id'>
   ): Promise<Table | undefined> {
-    const check = await this.$insertOne(value).executeTakeFirst();
-    if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
+    const check: any = await this.$insertOne(value).executeTakeFirst();
+    if (check?.id) {
+      value.id = check.id;
+      return value as unknown as Table;
+    } else if (check?.numInsertedOrUpdatedRows == BigInt(1)) {
       if (!this.autoId && check.insertId && this.schema?.shape['id']) {
         value.id = Number(check.insertId);
       }
@@ -544,7 +569,12 @@ export class PTable<
       ?.extend({ id: z.any() })
       .strict()
       .parse(v) as unknown as Table;
-    return this.ky.insertInto(this.table).values(validValue as any);
+    return !this.autoId && this.schema?.shape['id']
+      ? this.ky
+          .insertInto(this.table)
+          .values(validValue as any)
+          .returning('id')
+      : this.ky.insertInto(this.table).values(validValue as any);
   }
 
   /**
@@ -605,21 +635,14 @@ export class PTable<
       );
   }
 
-  async insertMany(
-    values: Array<Partial<Table>>
-  ): Promise<Table[] | undefined> {
+  async insertMany(values: Array<Partial<Table>>): Promise<Table[]> {
     if (values.length == 0) return [];
-    const check = await this.$insertMany(values).executeTakeFirst();
-    if (check?.numInsertedOrUpdatedRows == BigInt(values.length)) {
-      if (!this.autoId) {
-        // not sure about this
-        values.forEach((o, index) => {
-          o.id = Number(check.insertId) - values.length + index + 1;
-        });
-      }
-      return values as Table[];
-    }
-    return undefined;
+    const result = await this.$insertMany(values).execute();
+    if (this.autoId) return values as any;
+    result.forEach((o: any, index) => {
+      values[index].id = o.id;
+    });
+    return values as Table[];
   }
 
   $insertMany(values: Array<Partial<Table>>) {
@@ -632,7 +655,13 @@ export class PTable<
       }
       return schema?.parse(o) ?? o;
     });
-    return this.ky.insertInto(this.table).values(validValues as any);
+
+    return this.autoId
+      ? this.ky.insertInto(this.table).values(validValues as any)
+      : this.ky
+          .insertInto(this.table)
+          .values(validValues as any)
+          .returning('id');
   }
 
   async deleteMany(opts: {
@@ -649,10 +678,10 @@ export class PTable<
 
   async count({ where }: { where?: QueryWhere<Table> }): Promise<number> {
     let query = this.ky.selectFrom(this.table);
-    query = query.select(eb => eb.fn.countAll().as('count'));
+    query = query.select(eb => eb.fn.countAll<number>().as('count'));
     query = mappingQueryOptions(query, { where }, false);
     const data: any = await query.executeTakeFirst();
-    return data?.count;
+    return parseInt(data?.count);
   }
 
   selectById(

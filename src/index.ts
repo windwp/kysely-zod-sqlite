@@ -2,5 +2,6 @@ export type { InferSchemaFromSqlApi, PTableFromSchema } from './SqliteApi';
 export type { Query, TableDefinition } from './types';
 export { SqliteApi, PTable } from './SqliteApi';
 export * from './helpers/zod';
-export * from './creator/sqlite';
+export { createKyselySqlite } from './creator/sqlite';
+export { createKyselyPostgreSql } from './creator/postgreSql';
 export { sql } from 'kysely';

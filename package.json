@@ -132,7 +132,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "type-fest": "^3.11.0",
     "@cloudflare/workers-types": "^4.20230814.0",
     "@ryansonshine/commitizen": "^4.2.8",
     "@ryansonshine/cz-conventional-changelog": "^3.3.4",
@@ -151,10 +150,15 @@
     "eslint-plugin-prettier": "^3.4.1",
     "fix-esm-import-path": "^1.4.0",
     "lint-staged": "^13.2.1",
+    "pg": "^8.11.3",
+    "pg-cursor": "^2.10.3",
+    "@types/pg": "^8.10.2",
+    "@types/pg-cursor": "^2.7.0",
     "prettier": "^2.2.1",
     "semantic-release": "^21.0.1",
     "ts-node": "^10.2.1",
     "tsd": "^0.29.0",
+    "type-fest": "^3.11.0",
     "typescript": "^5.2.2",
     "vitest": "^0.34.3"
   }
