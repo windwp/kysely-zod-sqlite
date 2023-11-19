@@ -31,10 +31,11 @@ export class PostgresApi<
     }
   ) {
     const ky = opts?.ky || this.ky;
-    const hooks = opts?.hooks || [
-      hookAutoId(this.config.autoIdFnc),
-      hookTimeStamp(),
-    ];
+    const hooks = opts?.hooks ||
+      this.config.hooks || [
+        hookAutoId(this.config.autoIdFnc),
+        hookTimeStamp({ updatedAt: 'updatedAt', createdAt: 'createdAt' }),
+      ];
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
       tableName,
