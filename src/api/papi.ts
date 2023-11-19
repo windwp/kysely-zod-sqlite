@@ -202,6 +202,7 @@ export class PTable<
 > {
   private relations: { [k: string]: TableRelation };
   private hooks: PHooks[];
+  private hookContext: { schema: any; table: string };
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,
@@ -218,6 +219,7 @@ export class PTable<
   ) {
     this.schema = schema;
     this.hooks = opts?.hooks ?? [];
+    this.hookContext = { schema: this.schema, table: this.table };
     this.relations = {};
     if (this.schema?.shape) {
       for (const [key, value] of Object.entries(this.schema.shape)) {
@@ -261,7 +263,7 @@ export class PTable<
     let query = this.ky.updateTable(this.table);
     query = mappingQueryOptions(query, opts, false);
     this.hooks.forEach(h => {
-      if (h.onUpdate) h.onUpdate(data, { table: this.table, schema: this.schema });
+      if (h.onUpdate) h.onUpdate(data, this.hookContext);
     });
     const schema = this.schema?.extend({ id: z.any() }).partial();
     return query.set(schema?.parse(data) ?? data);
@@ -285,7 +287,7 @@ export class PTable<
   ) {
     const data: any = opts.data;
     this.hooks.forEach(h => {
-      if (h.onUpdate) h.onUpdate(data, { table: this.table, schema: this.schema });
+      if (h.onUpdate) h.onUpdate(data, this.hookContext);
     });
     let query = this.ky.updateTable(this.table);
     let selectQuery = this.ky.selectFrom(this.table);
@@ -316,7 +318,7 @@ export class PTable<
   $insertOne(value: SetOptional<TableInput, 'id'>) {
     const v = value as any;
     this.hooks.forEach(h => {
-      if (h.onInsert) h.onInsert(v, { table: this.table, schema: this.schema });
+      if (h.onInsert) h.onInsert(v, this.hookContext);
     });
     const validValue = this.schema
       ?.extend({ id: z.any() })
@@ -347,8 +349,7 @@ export class PTable<
     }
 
     this.hooks.forEach(h => {
-      if (h.onInsert)
-        h.onInsert(data, { table: this.table, schema: this.schema });
+      if (h.onInsert) h.onInsert(data, this.hookContext);
     });
 
     if (!opts.where) {
@@ -384,10 +385,8 @@ export class PTable<
     conflicts: Array<keyof Table & string>;
   }) {
     this.hooks.forEach(h => {
-      if (h.onInsert)
-        h.onInsert(create, { table: this.table, schema: this.schema });
-      if (h.onUpdate)
-        h.onUpdate(update, { table: this.table, schema: this.schema });
+      if (h.onInsert) h.onInsert(create, this.hookContext);
+      if (h.onUpdate) h.onUpdate(update, this.hookContext);
     });
     return this.ky
       .insertInto(this.table)
@@ -423,8 +422,7 @@ export class PTable<
     const schema = this.schema?.extend({ id: z.any() });
     const validValues: any = values.map((v: any) => {
       this.hooks.forEach(h => {
-        if (h.onInsert)
-          h.onInsert(v, { table: this.table, schema: this.schema });
+        if (h.onInsert) h.onInsert(v, this.hookContext);
       });
       return schema?.parse(v) ?? v;
     });
@@ -498,7 +496,7 @@ export class PTable<
 
   $updateById(id: Table['id'], value: Partial<Table>) {
     this.hooks.forEach(h => {
-      if (h.onUpdate) h.onUpdate(value, { table: this.table, schema: this.schema });
+      if (h.onUpdate) h.onUpdate(value, this.hookContext);
     });
     return this.ky
       .updateTable(this.table)

@@ -128,7 +128,6 @@
     "date-fns": "^2.30.0",
     "kysely": "^0.26.3",
     "loglevel": "^1.8.1",
-    "superjson": "^1.12.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

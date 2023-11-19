@@ -16,7 +16,8 @@ export type ApiConfig = {
   database?: string;
   server?: string;
   logger?: Logger;
-  /* auto generate uuid if id is zodString */
+  hooks?: PHooks[];
+  /* auto generate uuid if id is ZodString */
   autoIdFnc?: () => string;
   /* analyze performace of query and meta result */
   analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;

@@ -6,6 +6,7 @@ import type {
   DataBody,
   ExtractResultFromQuery,
   PActionBody,
+  PHooks,
   ZodSchemaToKysely,
 } from '../types';
 import type {
@@ -28,14 +29,15 @@ export class SqliteApi<
     tableName: K,
     opts?: {
       ky?: Kysely<ZodSchemaToKysely<Schema>>;
-      hooks?: [];
+      hooks?: PHooks[];
     }
   ) {
     const ky = opts?.ky || this.ky;
-    const hooks = opts?.hooks || [
-      hookAutoId(this.config.autoIdFnc),
-      hookTimeStamp(),
-    ];
+    const hooks = opts?.hooks ||
+      this.config.hooks || [
+        hookAutoId(this.config.autoIdFnc),
+        hookTimeStamp({ updatedAt: 'updatedAt', createdAt: 'createdAt' }),
+      ];
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
       tableName,
