@@ -299,13 +299,13 @@ const check = await api.bulk({
 # FAQ
 
 ### Is that library is a ORM?
-No, It just a wrapper around kysely. 
+No, It just a wrapper around kysely.
 You can think it is an API with zod for validation and kysely for query
 
 ### Different between using table vs kysely
 ``` typescript
-api.table('aaa').insertOne({...}) // validation runtime value with zod
-api.ky.insertInto('aaa').values({...}) // it is type checking
+api.table('aaa').insertOne({...}) // it is validation on runtime value with zod.
+api.ky.insertInto('aaa').values({...}) // it is type checking.
 ```
 
 ### What is $ on table

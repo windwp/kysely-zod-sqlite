@@ -587,8 +587,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       .limit(1)
       .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
       .selectAll()
-      // dynamic add any field
-      .select(sql.raw('10 as dynamic') as any)
+      .select(sql`10`.as('dynamic'))
       .execute();
 
     if (dialect === 'sqlite') {
@@ -641,7 +640,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       userId: '1234567',
       sample: 'sample',
     });
-    expect((test as any)?.id).toBeFalsy();
+    expect(test?.id).toBeFalsy();
     const check = await api.TestNoId.selectMany({});
     expect(check.length).toBe(2);
     expect((check[0] as any)['id']).toBe(undefined);
@@ -717,7 +716,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     });
     await expect(async () => {
       await api.TestUser.insertOne({
-        config: { ldsafsa: 'dasd' } as any,
+        config: { dsafsa: 'dasd' } as any,
         name: 'dsfdsa',
         email: 'jsonschema@gmail.com',
       });

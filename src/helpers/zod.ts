@@ -66,8 +66,8 @@ export function zRelationOne<T>(
   return z
     .custom<T & { __relations?: any }>()
     .transform((v, ctx): T => {
-      if ((v as unknown) === '') return (defaultValue ?? {}) as any;
-      if (!v || typeof v !== 'string') return v as any;
+      if ((v as unknown) === '') return (defaultValue ?? {}) as T;
+      if (!v || typeof v !== 'string') return v;
       try {
         return JSON.parse(v);
       } catch (e: any) {
@@ -89,8 +89,8 @@ export function zRelationMany<T>(
   return z
     .custom<Array<T & { __relations?: TableRelation<T> }>>()
     .transform((v, ctx): Array<T > => {
-      if ((v as unknown) === '') return (defaultValue as any) ?? [];
-      if (!v || typeof v !== 'string') return v as any;
+      if ((v as unknown) === '') return (defaultValue as T[]) ?? [];
+      if (!v || typeof v !== 'string') return v;
       try {
         return JSON.parse(v);
       } catch (e: any) {

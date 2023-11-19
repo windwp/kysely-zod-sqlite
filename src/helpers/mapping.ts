@@ -1,4 +1,4 @@
-import type { QueryRelations, TableRelation } from "../types";
+import type { QueryRelations, TableRelation } from '../types';
 
 export function mappingQueryOptions<V>(
   query: any,
@@ -48,14 +48,14 @@ export function mappingQueryOptions<V>(
 export function mappingRelations<V>(
   query: any,
   table: string,
-  relations: { [k: string]: TableRelation },
+  relations: { [k: string]: TableRelation } | undefined,
   opts: QueryRelations<V>,
   jsonHelpers: {
     jsonArrayFrom: (query: any) => any;
     jsonObjectFrom: (query: any) => any;
   }
 ) {
-  if (opts.include) {
+  if (opts.include && relations) {
     for (const key in opts.include) {
       const relation = relations[key];
       const select = opts.include[key];
@@ -85,5 +85,3 @@ export function mappingRelations<V>(
   }
   return query;
 }
-
-

@@ -73,7 +73,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
     let shape = this.schema?.shape[table]?.partial();
     if (!shape || !data) return data;
     if (extend) {
-      shape = shape.extend(extend as any) as any;
+      shape = shape.extend(extend);
     }
     return this.schema.shape[table]?.partial().parse(data) as X;
   }
@@ -243,18 +243,7 @@ export class PTable<
   }
 
   $selectMany(opts: QueryRelations<TableInput>) {
-    let query = this.ky.selectFrom(this.table);
-    query = mappingQueryOptions(query, opts);
-    if (this.relations) {
-      query = mappingRelations(
-        query,
-        this.table,
-        this.relations,
-        opts,
-        this.jsonHelpers
-      );
-    }
-    return query;
+    return this.mappingQuery(this.ky.selectFrom(this.table), opts);
   }
 
   selectFirst(opts: QueryRelations<TableInput>) {
@@ -280,9 +269,8 @@ export class PTable<
     const data: any = opts.data;
     let query = this.ky.updateTable(this.table);
     query = mappingQueryOptions(query, opts, false);
-    if (this.timeStamp) {
-      data.updatedAt = new Date();
-    }
+    if (this.timeStamp) data.updatedAt = new Date();
+
     const schema = this.schema?.extend({ id: z.any() }).partial();
     return query.set(schema?.parse(data) ?? data);
   }
@@ -437,7 +425,7 @@ export class PTable<
     const validValues = values.map((o: any) => {
       if (!o.id && this.autoId) o.id = this.autoIdFnc(this.table, o);
       if (this.timeStamp) {
-        if (!o.createdAt) o.createdAt = new Date();
+        if (!o.created_at) o.created_at = new Date();
         if (!o.updatedAt) o.updatedAt = new Date();
       }
       return schema?.parse(o) ?? o;
@@ -484,13 +472,22 @@ export class PTable<
     id: Table['id'],
     select?: Readonly<{ [k in keyof TableInput]?: boolean }>
   ) {
-    return this.$selectFirst({
-      where: { id } as QueryWhere<TableInput>,
-      select,
-    });
+    const query = this.ky.selectFrom(this.table);
+    return this.mappingQuery(query, { select, where: { id: id } as any });
   }
 
-  async updateById(
+  private mappingQuery(query: any, opts: QueryRelations<TableInput>) {
+    query = mappingQueryOptions(query, opts);
+    return mappingRelations(
+      query,
+      this.table,
+      this.relations,
+      opts,
+      this.jsonHelpers
+    );
+  }
+
+  updateById(
     id: Table['id'],
     value: Partial<Table>
   ): Promise<{
@@ -498,7 +495,7 @@ export class PTable<
     numChangedRows?: bigint;
   }> {
     if (value.id) delete value.id;
-    return await this.$updateById(id, value).executeTakeFirst();
+    return this.$updateById(id, value).executeTakeFirst();
   }
 
   $updateById(id: Table['id'], value: Partial<Table>) {
@@ -511,8 +508,8 @@ export class PTable<
       .set(value as any);
   }
 
-  async deleteById(id: Table['id']): Promise<{ numDeletedRows: BigInt }> {
-    return await this.$deleteById(id).executeTakeFirst();
+  deleteById(id: Table['id']): Promise<{ numDeletedRows: BigInt }> {
+    return this.$deleteById(id).executeTakeFirst();
   }
 
   $deleteById(id: Table['id']) {
