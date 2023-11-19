@@ -14,9 +14,10 @@ export type ApiConfig = {
   paramPlaceholder?: string;
   options?: ApiOptions;
   database?: string;
+  server?: string;
   logger?: Logger;
   /* auto generate uuid if id is zodString */
-  autoIdFnc?: (tableName: string, value: any) => string;
+  autoIdFnc?: () => string;
   /* analyze performace of query and meta result */
   analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
 };
@@ -36,7 +37,7 @@ export type ApiOptions = {
   requestHeader?: (body: any) => Record<string, any>;
 };
 
-export type OneActionBody =
+export type PActionBody =
   | {
       action: 'selectFirst' | 'run' | 'selectAll';
       sql: string;
@@ -57,11 +58,11 @@ export type OneActionBody =
       }[];
     };
 export type DataBody =
-  | OneActionBody
+  | PActionBody
   | {
       action: 'bulks';
       isTransaction: boolean;
-      operations: Array<OneActionBody & { key: string; table?: string }>;
+      operations: Array<PActionBody & { key: string; table?: string }>;
     };
 
 export type TableRelation = {
@@ -142,6 +143,10 @@ export type QueryRelations<V> = Query<V> & {
                 : never;
             });
   };
+};
+export type PHooks = {
+  onInsert?: (value: any, ctx: { table: string; schema: any }) => void;
+  onUpdate?: (value: any, ctx: { table: string; schema: any }) => void;
 };
 
 export type BatchResult = {

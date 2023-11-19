@@ -334,7 +334,6 @@ api.parseMany<UserTable & { dynamic: number }>(
 ### migration 
 use the migration from kysely
 
-
 # Thank
 [kysely](https://github.com/kysely-org/kysely)
 [zod](https://github.com/colinhacks/zod)

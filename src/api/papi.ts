@@ -14,7 +14,8 @@ import type {
   ApiOptions,
   DataBody,
   ExtractResultFromQuery,
-  OneActionBody,
+  PActionBody,
+  PHooks,
   Query,
   QueryRelations,
   QueryWhere,
@@ -124,7 +125,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
       | { compile: () => CompiledQuery<z.output<Schema>> }
       | RawBuilder<z.output<Schema>>,
     batchParams: Array<any[]>
-  ): OneActionBody;
+  ): PActionBody;
 
   /*
    * only working cloudflare D1 and sqlite
@@ -147,7 +148,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
   abstract bulk<V extends string>(
     operations: {
       [key in V]:
-        | OneActionBody
+        | PActionBody
         | { compile: () => CompiledQuery<z.output<Schema>> }
         | RawBuilder<z.output<Schema>>
         | undefined;
@@ -199,10 +200,8 @@ export class PTable<
   TableInput extends { id: string | number },
   TableName extends string
 > {
-  private timeStamp: boolean;
-  private autoId: boolean;
-  private autoIdFnc: (tableName: string, value: any) => string;
   private relations: { [k: string]: TableRelation };
+  private hooks: PHooks[];
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,
@@ -214,19 +213,11 @@ export class PTable<
       [k in keyof Table]: ZodType<Table[k]>;
     }>,
     opts?: {
-      timeStamp?: boolean;
-      autoId?: boolean;
-      autoIdFnc?: (tableName: string, value: Table) => string;
+      hooks: PHooks[];
     }
   ) {
     this.schema = schema;
-    this.timeStamp =
-      opts?.timeStamp ?? !!(this.schema?.shape as any)?.['updatedAt'];
-    this.autoIdFnc = opts?.autoIdFnc || (() => crypto.randomUUID());
-    this.autoId =
-      opts?.autoId ??
-      (this.schema?.shape['id']?._def as any)?.typeName === 'ZodString';
-
+    this.hooks = opts?.hooks ?? [];
     this.relations = {};
     if (this.schema?.shape) {
       for (const [key, value] of Object.entries(this.schema.shape)) {
@@ -269,8 +260,9 @@ export class PTable<
     const data: any = opts.data;
     let query = this.ky.updateTable(this.table);
     query = mappingQueryOptions(query, opts, false);
-    if (this.timeStamp) data.updatedAt = new Date();
-
+    this.hooks.forEach(h => {
+      if (h.onUpdate) h.onUpdate(data, { table: this.table, schema: this.schema });
+    });
     const schema = this.schema?.extend({ id: z.any() }).partial();
     return query.set(schema?.parse(data) ?? data);
   }
@@ -292,10 +284,10 @@ export class PTable<
     }
   ) {
     const data: any = opts.data;
+    this.hooks.forEach(h => {
+      if (h.onUpdate) h.onUpdate(data, { table: this.table, schema: this.schema });
+    });
     let query = this.ky.updateTable(this.table);
-    if (this.timeStamp) {
-      data.updatedAt = new Date();
-    }
     let selectQuery = this.ky.selectFrom(this.table);
     opts.take = 1;
     opts.select = { id: true };
@@ -322,23 +314,20 @@ export class PTable<
   }
 
   $insertOne(value: SetOptional<TableInput, 'id'>) {
-    if (!value.id && this.autoId)
-      value.id = this.autoIdFnc(this.table, value as unknown as Table);
     const v = value as any;
-    if (this.timeStamp) {
-      if (!v.createdAt) v.createdAt = new Date();
-      if (!v.updatedAt) v.updatedAt = new Date();
-    }
+    this.hooks.forEach(h => {
+      if (h.onInsert) h.onInsert(v, { table: this.table, schema: this.schema });
+    });
     const validValue = this.schema
       ?.extend({ id: z.any() })
       .strict()
-      .parse(v) as unknown as Table;
-    return !this.autoId && this.schema?.shape['id']
+      .parse(v) as unknown as any;
+    return !v.id && this.schema?.shape['id']
       ? this.ky
           .insertInto(this.table)
           .values(validValue as any)
           .returning('id')
-      : this.ky.insertInto(this.table).values(validValue as any);
+      : this.ky.insertInto(this.table).values(validValue);
   }
 
   /**
@@ -356,7 +345,12 @@ export class PTable<
       });
       return data;
     }
-    data.id = this.autoIdFnc(this.table, data);
+
+    this.hooks.forEach(h => {
+      if (h.onInsert)
+        h.onInsert(data, { table: this.table, schema: this.schema });
+    });
+
     if (!opts.where) {
       return await this.insertOne(data);
     }
@@ -389,8 +383,12 @@ export class PTable<
     update: Partial<Table>;
     conflicts: Array<keyof Table & string>;
   }) {
-    if (!create.id && this.autoId)
-      create.id = this.autoIdFnc(this.table, create);
+    this.hooks.forEach(h => {
+      if (h.onInsert)
+        h.onInsert(create, { table: this.table, schema: this.schema });
+      if (h.onUpdate)
+        h.onUpdate(update, { table: this.table, schema: this.schema });
+    });
     return this.ky
       .insertInto(this.table)
       .values(create as any)
@@ -402,14 +400,15 @@ export class PTable<
   async insertMany(values: Array<Partial<Table>>): Promise<Table[]> {
     if (values.length == 0) return [];
     const result: any = await this.$insertMany(values).execute();
-    if (this.autoId) return values as any;
+    const autoId = (this.schema as any).shape.id?._def.typeName === 'ZodString';
+    if (autoId) return values as any;
     if (Array.isArray(result)) {
       result.forEach((o: any, index) => {
         values[index].id = o.id;
       });
       return values as Table[];
     } else if (result?.changes == BigInt(values.length)) {
-      if (!this.autoId) {
+      if (!autoId) {
         // not sure about this
         values.forEach((o, index) => {
           o.id = Number(result.lastInsertRowid) - values.length + index + 1;
@@ -422,17 +421,16 @@ export class PTable<
 
   $insertMany(values: Array<Partial<Table>>) {
     const schema = this.schema?.extend({ id: z.any() });
-    const validValues = values.map((o: any) => {
-      if (!o.id && this.autoId) o.id = this.autoIdFnc(this.table, o);
-      if (this.timeStamp) {
-        if (!o.created_at) o.created_at = new Date();
-        if (!o.updatedAt) o.updatedAt = new Date();
-      }
-      return schema?.parse(o) ?? o;
+    const validValues: any = values.map((v: any) => {
+      this.hooks.forEach(h => {
+        if (h.onInsert)
+          h.onInsert(v, { table: this.table, schema: this.schema });
+      });
+      return schema?.parse(v) ?? v;
     });
 
-    return this.autoId
-      ? this.ky.insertInto(this.table).values(validValues as any)
+    return validValues.id
+      ? this.ky.insertInto(this.table).values(validValues)
       : this.ky
           .insertInto(this.table)
           .values(validValues as any)
@@ -472,8 +470,8 @@ export class PTable<
     id: Table['id'],
     select?: Readonly<{ [k in keyof TableInput]?: boolean }>
   ) {
-    const query = this.ky.selectFrom(this.table);
-    return this.mappingQuery(query, { select, where: { id: id } as any });
+    const query = this.ky.selectFrom(this.table).where('id', '=', id as any);
+    return mappingQueryOptions(query, { select });
   }
 
   private mappingQuery(query: any, opts: QueryRelations<TableInput>) {
@@ -499,9 +497,9 @@ export class PTable<
   }
 
   $updateById(id: Table['id'], value: Partial<Table>) {
-    if (this.timeStamp) {
-      (value as any).updatedAt = new Date();
-    }
+    this.hooks.forEach(h => {
+      if (h.onUpdate) h.onUpdate(value, { table: this.table, schema: this.schema });
+    });
     return this.ky
       .updateTable(this.table)
       .where('id', '=', id as any)

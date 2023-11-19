@@ -640,7 +640,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       userId: '1234567',
       sample: 'sample',
     });
-    expect(test?.id).toBeFalsy();
+    expect((test as any)?.id).toBeFalsy();
     const check = await api.TestNoId.selectMany({});
     expect(check.length).toBe(2);
     expect((check[0] as any)['id']).toBe(undefined);

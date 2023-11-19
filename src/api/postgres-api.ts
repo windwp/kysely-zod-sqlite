@@ -4,7 +4,8 @@ import type {
   ApiOptions,
   DataBody,
   ExtractResultFromQuery,
-  OneActionBody,
+  PActionBody,
+  PHooks,
   ZodSchemaToKysely,
 } from '../types';
 import type {
@@ -16,29 +17,30 @@ import type {
 } from 'kysely';
 import { defaultSerializer } from '../serialize/sqlite-serialize-transformer.js';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
+import { hookAutoId } from '../hooks/auto-id';
+import { hookTimeStamp } from '../hooks/timestamp';
 
 export class PostgresApi<
   Schema extends ZodObject<any, any, any>
 > extends PApi<Schema> {
-
   table<K extends keyof z.output<Schema> & string>(
     tableName: K,
     opts?: {
       ky?: Kysely<ZodSchemaToKysely<Schema>>;
-      timeStamp?: boolean;
-      autoId?: boolean;
-      autoIdFnc?: (tableName?: string) => string;
+      hooks?: PHooks[];
     }
   ) {
     const ky = opts?.ky || this.ky;
+    const hooks = opts?.hooks || [
+      hookAutoId(this.config.autoIdFnc),
+      hookTimeStamp(),
+    ];
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
       tableName,
       { jsonArrayFrom, jsonObjectFrom },
       this.schema.shape[tableName],
-      this.config.autoIdFnc
-        ? { ...opts, autoIdFnc: this.config.autoIdFnc }
-        : opts
+      { hooks }
     );
   }
 
@@ -77,7 +79,7 @@ export class PostgresApi<
       | { compile: () => CompiledQuery<z.output<Schema>> }
       | RawBuilder<z.output<Schema>>,
     batchParams: Array<any[]>
-  ): OneActionBody {
+  ): PActionBody {
     const query = sqlQuery.compile(this.ky);
     batchParams.forEach(o => {
       if (Array.isArray(o)) {
@@ -150,14 +152,14 @@ export class PostgresApi<
   async bulk<V extends string>(
     operations: {
       [key in V]:
-        | OneActionBody
+        | PActionBody
         | { compile: () => CompiledQuery<z.output<Schema>> }
         | RawBuilder<z.output<Schema>>
         | undefined;
     },
     opts?: ApiOptions & { isTransaction: boolean }
   ) {
-    const ops: Array<OneActionBody & { key: string }> = Object.keys(
+    const ops: Array<PActionBody & { key: string }> = Object.keys(
       operations
     ).map((k: any) => {
       const value = operations[k as V];
