@@ -2,8 +2,8 @@ import { PHooks } from '../types';
 
 export function hookAutoId(fnc?: () => string) {
   return {
-    onInsert(value: any, ctx) {
-      if (ctx.schema.shape.id?._def.typeName === 'ZodString') {
+    onInsert(value, ctx) {
+      if (!value.id && ctx.autoId) {
         value.id = fnc ? fnc() : crypto.randomUUID();
       }
       return value;

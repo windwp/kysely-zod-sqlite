@@ -145,9 +145,11 @@ export type QueryRelations<V> = Query<V> & {
             });
   };
 };
+
+export type PHookContext = { table: string; schema: any; autoId: boolean };
 export type PHooks = {
-  onInsert?: (value: any, ctx: { table: string; schema: any }) => void;
-  onUpdate?: (value: any, ctx: { table: string; schema: any }) => void;
+  onInsert?: (value: any, ctx: PHookContext) => void;
+  onUpdate?: (value: any, ctx: PHookContext) => void;
 };
 
 export type BatchResult = {

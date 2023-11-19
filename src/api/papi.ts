@@ -102,9 +102,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
     tableName: K,
     opts?: {
       ky?: Kysely<ZodSchemaToKysely<Schema>>;
-      timeStamp?: boolean;
-      autoId?: boolean;
-      autoIdFnc?: (tableName?: string) => string;
+      hooks?: PHooks[];
     }
   ): PTable<z.output<Schema>[K], z.input<Schema>[K], K>;
 
@@ -202,7 +200,7 @@ export class PTable<
 > {
   private relations: { [k: string]: TableRelation };
   private hooks: PHooks[];
-  private hookContext: { schema: any; table: string };
+  private hookContext: { schema: any; table: string; autoId: boolean };
   constructor(
     public readonly ky: Kysely<{ [k in TableName]: Table }>,
     private readonly table: TableName,
@@ -219,7 +217,11 @@ export class PTable<
   ) {
     this.schema = schema;
     this.hooks = opts?.hooks ?? [];
-    this.hookContext = { schema: this.schema, table: this.table };
+    this.hookContext = {
+      schema: this.schema,
+      table: this.table,
+      autoId: (this.schema as any).shape.id?._def.typeName === 'ZodString',
+    };
     this.relations = {};
     if (this.schema?.shape) {
       for (const [key, value] of Object.entries(this.schema.shape)) {
@@ -399,15 +401,13 @@ export class PTable<
   async insertMany(values: Array<Partial<Table>>): Promise<Table[]> {
     if (values.length == 0) return [];
     const result: any = await this.$insertMany(values).execute();
-    const autoId = (this.schema as any).shape.id?._def.typeName === 'ZodString';
-    if (autoId) return values as any;
     if (Array.isArray(result)) {
       result.forEach((o: any, index) => {
         values[index].id = o.id;
       });
       return values as Table[];
     } else if (result?.changes == BigInt(values.length)) {
-      if (!autoId) {
+      if (!this.hookContext.autoId) {
         // not sure about this
         values.forEach((o, index) => {
           o.id = Number(result.lastInsertRowid) - values.length + index + 1;

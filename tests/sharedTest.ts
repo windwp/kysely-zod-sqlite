@@ -178,6 +178,16 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(check?.updatedAt instanceof Date).toBeTruthy();
     }
     {
+      const check = await api.TestUser.insertOne({
+        id: 'custom-id',
+        name: 'check2',
+        email: 'usercheck2@gmail.com',
+        updatedAt: new Date(),
+      });
+      expect(check?.id).toBeTruthy();
+      expect(check?.id).toBe('custom-id');
+    }
+    {
       const postArr = Array.from({ length: 10 }).map((_, i) => {
         return {
           id: crypto.randomUUID(),
