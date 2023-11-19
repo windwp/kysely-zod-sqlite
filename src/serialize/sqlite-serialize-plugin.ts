@@ -44,11 +44,11 @@ export class SqliteSerializePlugin implements KyselyPlugin {
   private parseResult(rows: any[], table: string) {
     if (this.shape?.[table]) {
       try {
-        return Promise.resolve(
-          rows.map(row =>
-            row ? this.shape[table].partial().passthrough().parse(row) : row
-          )
-        );
+        return rows.map(row => {
+          return row
+            ? this.shape[table].partial().passthrough().parse(row)
+            : row;
+        });
       } catch (error: any) {
         this.logger?.error(`zod serialize: ${error.message}`);
         this.logger?.error(rows);
@@ -66,7 +66,7 @@ export class SqliteSerializePlugin implements KyselyPlugin {
     return result.rows && ctx
       ? {
           ...args.result,
-          rows: await this.parseResult(result.rows, ctx),
+          rows: this.parseResult(result.rows, ctx),
         }
       : args.result;
   }
