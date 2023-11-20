@@ -31,26 +31,26 @@ export const userSchema = z.object({
       })
       .optional()
   ),
-  createdAt: zDate(),
-  updatedAt: zDate(),
+  created_at: zDate(),
+  updated_at: zDate(),
 });
 
 export const postSchema = z.object({
   id: z.string(),
   name: z.string(),
-  userId: z.string(),
-  isPublished: zBoolean(),
+  user_id: z.string(),
+  is_published: zBoolean(),
   data: z.string(),
-  createdAt: zDate(),
-  updatedAt: zDate(),
+  created_at: zDate(),
+  updated_at: zDate(),
 });
 
 export const postRelationSchema = postSchema.extend({
   user: zRelationOne({
     schema: userSchema,
-    ref: 'userId',
+    ref: 'user_id',
     refTarget: 'id',
-    table: 'TestUser',
+    table: 'test_users',
   }),
 });
 
@@ -58,14 +58,14 @@ export const userRelationSchema = userSchema.extend({
   test: zJsonObject<any>(),
   posts: zRelationMany({
     schema: postSchema,
-    refTarget: 'userId',
+    refTarget: 'user_id',
     ref: 'id',
-    table: 'TestPost',
+    table: 'test_posts',
   }),
 });
 export const testNoIdSchema = z.object({
-  userId: z.string(),
-  postId: z.string(),
+  user_id: z.string(),
+  post_id: z.string(),
   sample: z.string().default('visual'),
 });
 export type NoIdTable = z.input<typeof testNoIdSchema>;
@@ -82,10 +82,10 @@ export const orderSchema = z.object({
 
 export type OrderTable = z.input<typeof orderSchema>;
 export const dbSchema = z.object({
-  TestPost: postRelationSchema,
-  TestUser: userRelationSchema,
-  TestNoId: testNoIdSchema,
-  TestOrder: orderSchema,
+  test_posts: postRelationSchema,
+  test_users: userRelationSchema,
+  test_noids: testNoIdSchema,
+  test_orders: orderSchema,
 });
 
 export type Schema = typeof dbSchema;

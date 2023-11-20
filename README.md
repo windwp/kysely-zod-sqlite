@@ -34,42 +34,42 @@ export const userSchema = z.object({
     language:z.string(),
     status: z.enum(['busy', 'working' ]),
   })), 
-  createdAt: zDate(), //custom parse sqlite date
-  updatedAt: zDate(),
+  created_at: zDate(), //custom parse sqlite date
+  updated_at: zDate(),
   isDelete: zBoolean(), // parse boolean 1,0 or you can use z.coerce.boolean()
 });
 export const postSchema = z.object({
   id: z.string(),
   name: z.string(),
-  userId: z.string(),
-  isPublished: zBoolean,
+  user_id: z.string(),
+  is_published: zBoolean,
   data: z.string(),
-  createdAt: zDate,
-  updatedAt: zDate,
+  created_at: zDate,
+  updated_at: zDate,
 });
 // define a relation
 export const postRelationSchema = postSchema.extend({
   user: zRelationOne({
     schema: userSchema,
-    ref: 'userId',
+    ref: 'user_id',
     refTarget: 'id',
-    table: 'TestUser',
+    table: 'test_users',
   }),
 });
 export const userRelationSchema = userSchema.extend({
   posts: zRelationMany({
     schema: postSchema,
-    refTarget: 'userId',
+    refTarget: 'user_id',
     ref: 'id',
-    table: 'TestPost',
+    table: 'test_posts',
   }),
 });
 export type PostTable = z.infer<typeof postRelationSchema>;
 export type UserTable = z.infer<typeof userRelationSchema>;
 // define an api Database
 export const dbSchema = z.object({
-  TestUser: userRelationSchema,
-  TestPost: postRelationSchema,
+  test_users: userRelationSchema,
+  test_posts: postRelationSchema,
 });
 export type DbSchema = typeof dbSchema;
 ```
@@ -77,11 +77,11 @@ use schema to define api
 ```typescript
 export class TestApi extends SqliteApi<DbSchema> {
   
-  get TestUser() {
-    return this.table('TestUser');
+  get test_users() {
+    return this.table('test_users');
   } // api like prisma
-  get TestPost() {
-    return this.table('TestPost');
+  get test_posts() {
+    return this.table('test_posts');
   }
 }
 const config = {}; 
@@ -97,7 +97,7 @@ const api = new TestApi({
 ### Usage
 prisma similar api
 ```typescript
-const post = await api.TestPost.selectFirst({
+const post = await api.test_posts.selectFirst({
   where: { name: 'test' },
   include: {
     user: true, // query 1 level relation
@@ -105,7 +105,7 @@ const post = await api.TestPost.selectFirst({
 })
 // access relation and json data 🔥
 const language = post.user.config.language
-await api.TestUser.updateOne({
+await api.test_users.updateOne({
   where: {
     name: {
       like: 'user%', // it use kysely operation  = ('name' , 'like', 'user%') 
@@ -117,9 +117,9 @@ await api.TestUser.updateOne({
 If you want to write a complex query you can use kysely
 ```typescript
 const data = await api.ky // this is a reference of kysely builder
-    .selectFrom('TestPost')
+    .selectFrom('test_posts')
     .limit(1)
-    .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
+    .innerJoin('test_users', 'test_posts.user_id', 'test_users.id')
     .selectAll()
     .execute();
 ```
@@ -219,13 +219,13 @@ const check = await extendApi.testExtend.selectFirst({
 ```typescript
 // raw sql query 
 await api.batchOneSmt(
-  sql`update TestUser set name = ? where id = ?`, 
+  sql`update test_users set name = ? where id = ?`, 
   [ ['aaa', 'id1'], ['bbb', 'id2'], ]
 );
 // run kysely query with multiple value
 const check = await api.batchOneSmt(
     api.ky
-      .updateTable('TestUser')
+      .updateTable('test_users')
       .set({
         data: sql` json_set(data, '$.value', ?)`,
       })
@@ -234,15 +234,15 @@ const check = await api.batchOneSmt(
 );
 // run multiple query on batch
 const result = await api.batchAllSmt([
-  api.ky.selectFrom('TestUser').selectAll(), // kysely query
-  api.ky.insertInto('TestPost').values({
+  api.ky.selectFrom('test_users').selectAll(), // kysely query
+  api.ky.insertInto('test_posts').values({
     id: uid(),
     name: 'post',
     data: '',
-    isPublished: true,
-    userId: userArr[0].id,
+    is_published: true,
+    user_id: userArr[0].id,
   }),
-  api.TestUser.$selectMany({  // prisma syntax (add $ before select)
+  api.test_users.$selectMany({  // prisma syntax (add $ before select)
       take: 10,
       include: {
         posts: true,
@@ -262,13 +262,13 @@ recommend use bulk for FetchDriver if you have multiple request
 ```typescript
 const check = await api.bulk({
   // skip that query for normal user
-  allUser: isAdmin ? api.ky.selectFrom('TestUser').selectAll(): undefined; 
-  insert: api.ky.insertInto('TestPost').values({
+  allUser: isAdmin ? api.ky.selectFrom('test_users').selectAll(): undefined; 
+  insert: api.ky.insertInto('test_posts').values({
     id: uid(),
     name: 'post',
     data: '',
-    isPublished: true,
-    userId: userArr[0].id,
+    is_published: true,
+    user_id: userArr[0].id,
   }),
 });
 // It use **key - value** to.
@@ -279,13 +279,13 @@ const allUser = check.getOne<any>('insert');
 const check = await api.bulk({
   user:
     api.ky
-      .updateTable('TestUser')
+      .updateTable('test_users')
       .set({
         data: sql` json_set(data, '$.value', ?)`,
       })
       .where('name', '=', '?'),
   ,
-  topUser: api.TestUser.$selectMany({
+  topUser: api.test_users.$selectMany({
     take: 10,
     include: {
       posts: true,
@@ -325,7 +325,7 @@ access_token: z.string().optional().nullable(),
 ```typescript
 api.parseMany<UserTable & { dynamic: number }>(
   data,
- 'TestUser', 
+ 'test_users', 
   // a joinSchema
   z.object({  
     dynamic: z.number(),

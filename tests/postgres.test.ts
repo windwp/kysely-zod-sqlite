@@ -2,7 +2,7 @@ import { describe } from 'vitest';
 import * as Cursor from 'pg-cursor';
 import fs from 'fs';
 import { Pool } from 'pg';
-import { TestPostgresApi } from './TestApi';
+import { test_postsgresApi } from './TestApi';
 import loglevel from 'loglevel';
 import { dbSchema } from './kysely-schema';
 import { Kysely, PostgresDialect } from 'kysely';
@@ -17,7 +17,7 @@ const pool = new Pool({
   max: 10,
 });
 
-const api = new TestPostgresApi({
+const api = new test_postsgresApi({
   schema: dbSchema,
   config: { logger: loglevel, dialect: 'postgres' },
   kysely: new Kysely({

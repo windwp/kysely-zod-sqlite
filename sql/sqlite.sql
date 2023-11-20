@@ -1,37 +1,37 @@
-DROP TABLE IF EXISTS TestUser;
-CREATE TABLE TestUser (
+DROP TABLE IF EXISTS test_users;
+CREATE TABLE test_users (
     id TEXT PRIMARY KEY,
     name TEXT,
     email TEXT UNIQUE,
     data TEXT,
     config TEXT,
     point INTEGER DEFAULT 0,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE IF EXISTS TestPost;
-CREATE TABLE TestPost (
+DROP TABLE IF EXISTS test_posts;
+CREATE TABLE test_posts (
     id TEXT PRIMARY KEY,
     name TEXT,
-    isPublished BOOLEAN DEFAULT FALSE,
+    is_published BOOLEAN DEFAULT FALSE,
     data TEXT,
-    userId TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (userId) REFERENCES TestUser(id) ON DELETE CASCADE
+    user_id TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES test_users(id) ON DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS TestNoId;
-CREATE TABLE TestNoId (
-    userId TEXT,
-    postId TEXT,
+DROP TABLE IF EXISTS test_noids;
+CREATE TABLE test_noids (
+    user_id TEXT,
+    post_id TEXT,
     sample TEXT,
-    UNIQUE(userId, postId)
+    UNIQUE(user_id, post_id)
 );
 
-DROP TABLE IF EXISTS TestOrder;
-CREATE TABLE TestOrder (
+DROP TABLE IF EXISTS test_orders;
+CREATE TABLE test_orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     price INTEGER
@@ -41,5 +41,5 @@ DROP TABLE IF EXISTS TestExtend;
 CREATE TABLE TestExtend (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

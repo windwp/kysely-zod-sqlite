@@ -24,7 +24,7 @@ describe('FetchDriver', () => {
       await expect(async () => {
         await api.table('Fetch' as any).insertOne({
           name: 'dsfsa',
-          isPublished: true,
+          is_published: true,
           data: { status: 'ok' },
         });
       }).rejects.toThrowError();

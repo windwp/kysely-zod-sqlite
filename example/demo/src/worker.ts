@@ -3,11 +3,11 @@ import { D1Driver } from 'kysely-zod-sqlite/driver/d1-driver';
 import { dbSchema, DbSchema } from './schema';
 import logger from 'loglevel';
 export class TestApi extends SqliteApi<DbSchema> {
-	get TestUser() {
-		return this.table('TestUser');
+	get test_users() {
+		return this.table('test_users');
 	}
-	get TestPost() {
-		return this.table('TestPost');
+	get test_posts() {
+		return this.table('test_posts');
 	}
 }
 export interface Env {
@@ -26,8 +26,8 @@ export default {
 				schema: dbSchema,
 			}),
 		});
-		await api.TestUser.deleteMany({});
-		const user = await api.TestUser.insertOne({
+		await api.test_users.deleteMany({});
+		const user = await api.test_users.insertOne({
 			name: 'test-test',
 			email: 'test@gmail.com',
 			config: {
@@ -43,33 +43,33 @@ export default {
 			},
 		});
 		if (user) {
-			await api.TestPost.insertOne({
+			await api.test_posts.insertOne({
 				name: 'fdsadfsa',
-				userId: user?.id,
+				user_id: user?.id,
 				data: 'fdafdas',
-				isPublished: false,
+				is_published: false,
 			});
-			await api.TestPost.insertOne({
+			await api.test_posts.insertOne({
 				name: 'fdsadfsa',
-				userId: user?.id,
+				user_id: user?.id,
 				data: 'fdafdas',
-				isPublished: false,
+				is_published: false,
 			});
 		}
-		await api.TestUser.selectMany({
+		await api.test_users.selectMany({
 			include: {
 				posts: {
 					select: {
 						name: true,
-						userId: true,
+						user_id: true,
 					},
 				},
 			},
 		});
 		await api.ky
-			.selectFrom('TestUser')
+			.selectFrom('test_users')
 			.limit(1)
-			.innerJoin('TestPost', 'TestPost.userId', 'TestUser.id')
+			.innerJoin('test_posts', 'test_posts.user_id', 'test_users.id')
 			.selectAll()
 			.execute();
 	},

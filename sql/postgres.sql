@@ -1,45 +1,45 @@
-DROP TABLE IF EXISTS "TestPost";
+DROP TABLE IF EXISTS "test_posts";
 
-DROP TABLE IF EXISTS "TestUser";
+DROP TABLE IF EXISTS "test_users";
 
 CREATE TABLE
-  "TestUser" (
+  "test_users" (
     "id" varchar(36) PRIMARY KEY,
     "name" varchar(100),
     "email" varchar(360) UNIQUE,
     "data" jsonb,
     "config" jsonb,
     "point" INTEGER DEFAULT 0,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
 CREATE TABLE
-  "TestPost" (
+  "test_posts" (
     "id" varchar(36) PRIMARY KEY,
     "name" varchar(100),
-    "isPublished" BOOLEAN DEFAULT FALSE,
+    "is_published" BOOLEAN DEFAULT FALSE,
     "data" TEXT,
-    "userId" varchar(36),
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("userId") REFERENCES "TestUser" ("id") ON DELETE CASCADE
+    "user_id" varchar(36),
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("user_id") REFERENCES "test_users" ("id") ON DELETE CASCADE
   );
 
-DROP TABLE IF EXISTS "TestNoId";
+DROP TABLE IF EXISTS "test_noids";
 
 CREATE TABLE
-  "TestNoId" (
-    "userId" varchar(36),
-    "postId" varchar(36),
+  "test_noids" (
+    "user_id" varchar(36),
+    "post_id" varchar(36),
     "sample" varchar(36),
-    CONSTRAINT "TestNoId_pkey" PRIMARY KEY ("userId", "postId")
+    CONSTRAINT "test_noids_pkey" PRIMARY KEY ("user_id", "post_id")
   );
 
-DROP TABLE IF EXISTS "TestOrder";
+DROP TABLE IF EXISTS "test_orders";
 
 CREATE TABLE
-  "TestOrder" (
+  "test_orders" (
     "id" serial PRIMARY KEY,
     "name" varchar(100),
     "price" INTEGER
@@ -51,5 +51,5 @@ CREATE TABLE
   "TestExtend" (
     "id" serial PRIMARY KEY,
     "name" varchar(100),
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );

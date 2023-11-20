@@ -28,35 +28,35 @@ export const userSchema = z.object({
 			status: z.enum(['busy', 'working']),
 		})
 	).optional(),
-	createdAt: zDate(),
-	updatedAt: zDate(),
+	created_at: zDate(),
+	updated_at: zDate(),
 });
 
 export const postSchema = z.object({
 	id: z.string(),
 	name: z.string(),
-	userId: z.string(),
-	isPublished: zBoolean(),
+	user_id: z.string(),
+	is_published: zBoolean(),
 	data: z.string(),
-	createdAt: zDate(),
-	updatedAt: zDate(),
+	created_at: zDate(),
+	updated_at: zDate(),
 });
 
 export const postRelationSchema = postSchema.extend({
 	user: zRelationOne({
 		schema: userSchema,
-		ref: 'userId',
+		ref: 'user_id',
 		refTarget: 'id',
-		table: 'TestUser',
+		table: 'test_users',
 	}),
 });
 
 export const userRelationSchema = userSchema.extend({
 	posts: zRelationMany({
 		schema: postSchema,
-		refTarget: 'userId',
+		refTarget: 'user_id',
 		ref: 'id',
-		table: 'TestPost',
+		table: 'test_posts',
 	}),
 });
 
@@ -65,8 +65,8 @@ export type PostTable = z.output<typeof postRelationSchema>;
 export type UserTable = z.output<typeof userRelationSchema>;
 
 export const dbSchema = z.object({
-	TestPost: postRelationSchema,
-	TestUser: userRelationSchema,
+	test_posts: postRelationSchema,
+	test_users: userRelationSchema,
 });
 
 export type DbSchema = typeof dbSchema;

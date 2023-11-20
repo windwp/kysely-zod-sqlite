@@ -12,6 +12,7 @@ import type { Logger } from 'loglevel';
 export type ApiConfig = {
   dialect?: string;
   paramPlaceholder?: string;
+  timeStamp?: { create: string; update: string };
   options?: ApiOptions;
   database?: string;
   server?: string;
@@ -78,7 +79,6 @@ export type TableRelation = {
 export type TableDefinition<T> = {
   schema?: ZodObject<any, any>;
   table: keyof T & string;
-  timeStamp?: boolean;
   relations?: {
     [key: string]: TableRelation;
   };

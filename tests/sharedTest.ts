@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { TestApi, TestPostgresApi } from './TestApi';
+import { TestApi, test_postsgresApi } from './TestApi';
 import { sql } from 'kysely';
 import { UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
@@ -15,10 +15,10 @@ export function getDb(): any {
   return db;
 }
 
-async function testFixture(api: TestApi | TestPostgresApi, numUser = 1) {
+async function testFixture(api: TestApi | test_postsgresApi, numUser = 1) {
   api.config.logger?.setLevel('silent');
-  await api.TestUser.deleteMany({});
-  await api.TestPost.deleteMany({});
+  await api.test_users.deleteMany({});
+  await api.test_posts.deleteMany({});
   const userArr = Array.from({ length: numUser }).map((_, i) => {
     return {
       id: crypto.randomUUID(),
@@ -29,41 +29,41 @@ async function testFixture(api: TestApi | TestPostgresApi, numUser = 1) {
         name: `name${i}`,
         o: { a: i },
       },
-      createdAt: new Date(),
-      updatedAt: startOfDay(addDays(new Date(), i)),
+      created_at: new Date(),
+      updated_at: startOfDay(addDays(new Date(), i)),
     };
   });
-  await api.TestUser.insertMany(userArr);
+  await api.test_users.insertMany(userArr);
   const postArr = Array.from({ length: numUser }).map((_, i) => {
     return {
       id: crypto.randomUUID(),
       name: 'post',
       data: '',
-      isPublished: i % 2 === 0,
-      userId: userArr[i % 2].id,
+      is_published: i % 2 === 0,
+      user_id: userArr[i % 2].id,
     };
   });
-  await api.TestPost.insertMany(postArr);
+  await api.test_posts.insertMany(postArr);
   api.config.logger?.setLevel('debug');
   return { userArr, postArr, user: userArr[0] };
 }
-export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
+export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
   it('value type boolean should work', async () => {
     await testFixture(api, 4);
-    const check = await api.TestPost.selectMany({
+    const check = await api.test_posts.selectMany({
       take: 2,
     });
-    expect(check[0].isPublished).toBe(true);
-    expect(check[1].isPublished).toBe(false);
-    const check2 = await api.TestPost.selectMany({
+    expect(check[0].is_published).toBe(true);
+    expect(check[1].is_published).toBe(false);
+    const check2 = await api.test_posts.selectMany({
       where: {
-        isPublished: false,
+        is_published: false,
       },
     });
     expect(check2.length).toBe(2);
-    const check3 = await api.TestPost.selectMany({
+    const check3 = await api.test_posts.selectMany({
       where: {
-        isPublished: true,
+        is_published: true,
       },
     });
     expect(check3.length).toBe(2);
@@ -72,7 +72,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('should be able to do a crud on kysely', async () => {
     const testId = '123456';
     await api.ky
-      .insertInto('TestUser')
+      .insertInto('test_users')
       .values({
         id: testId,
         name: 'test',
@@ -85,19 +85,19 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
             a: 10,
           },
         },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       })
       .executeTakeFirst();
     const first = await api.ky
-      .selectFrom('TestUser')
+      .selectFrom('test_users')
       .where('id', '=', testId)
       .selectAll()
       .executeTakeFirst();
 
     expect(first?.data?.o.a).toBe(10);
     const check = await api.ky
-      .updateTable('TestUser')
+      .updateTable('test_users')
       .set({ name: 'test' })
       .where('id', '=', testId)
       .executeTakeFirst();
@@ -105,17 +105,17 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   });
   it('should insert with json', async () => {
     {
-      const check = await api.TestUser.insertOne({
+      const check = await api.test_users.insertOne({
         name: 'dafda',
         email: 'withdata@gmail.com',
         data: '' as any,
       });
-      const value = await api.TestUser.selectById(check?.id!);
+      const value = await api.test_users.selectById(check?.id!);
       expect(typeof value?.data).toBe('object');
     }
 
     {
-      const check = await api.TestUser.insertOne({
+      const check = await api.test_users.insertOne({
         name: 'dafda',
         email: 'withconfig@gmail.com',
         data: '' as any,
@@ -125,9 +125,9 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         },
       });
 
-      const value = await api.TestUser.selectById(check?.id!);
-      api.TestUser.ky.selectFrom('TestUser').select(['id', 'config']);
-      api.TestUser.ky.insertInto('TestUser').values({
+      const value = await api.test_users.selectById(check?.id!);
+      api.test_users.ky.selectFrom('test_users').select(['id', 'config']);
+      api.test_users.ky.insertInto('test_users').values({
         id: '1234',
         name: 'dsfas',
         email: 'wi',
@@ -144,7 +144,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('short syntax should working', async () => {
     const { userArr } = await testFixture(api, 10);
     {
-      const check = await api.TestUser.selectMany({
+      const check = await api.test_users.selectMany({
         where: {
           name: {
             like: 'user%',
@@ -161,28 +161,28 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(check[0].id).toBe(userArr[2].id);
     }
     {
-      const check = await api.TestUser.selectById(userArr[0].id);
+      const check = await api.test_users.selectById(userArr[0].id);
       expect(check?.id).toBe(userArr[0].id);
-      expect(check?.createdAt instanceof Date).toBeTruthy();
-      expect(check?.updatedAt instanceof Date).toBeTruthy();
+      expect(check?.created_at instanceof Date).toBeTruthy();
+      expect(check?.updated_at instanceof Date).toBeTruthy();
     }
     {
-      const check = await api.TestUser.insertOne({
+      const check = await api.test_users.insertOne({
         name: 'check',
         email: 'usercheck@gmail.com',
-        updatedAt: new Date(),
+        updated_at: new Date(),
       });
       expect(check?.id).toBeTruthy();
       expect(check?.id?.length).toBe(36);
-      expect(check?.createdAt instanceof Date).toBeTruthy();
-      expect(check?.updatedAt instanceof Date).toBeTruthy();
+      expect(check?.created_at instanceof Date).toBeTruthy();
+      expect(check?.updated_at instanceof Date).toBeTruthy();
     }
     {
-      const check = await api.TestUser.insertOne({
+      const check = await api.test_users.insertOne({
         id: 'custom-id',
         name: 'check2',
         email: 'usercheck2@gmail.com',
-        updatedAt: new Date(),
+        updated_at: new Date(),
       });
       expect(check?.id).toBeTruthy();
       expect(check?.id).toBe('custom-id');
@@ -193,29 +193,29 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
           id: crypto.randomUUID(),
           name: 'crudPost',
           data: '',
-          userId: userArr[i % 2].id,
+          user_id: userArr[i % 2].id,
         };
       });
-      await api.TestPost.insertMany(postArr);
-      await api.TestPost.deleteMany({
+      await api.test_posts.insertMany(postArr);
+      await api.test_posts.deleteMany({
         where: {
           name: 'crudPost',
-          userId: userArr[0].id,
+          user_id: userArr[0].id,
         },
       });
-      const check = await api.TestPost.selectMany({
+      const check = await api.test_posts.selectMany({
         where: {
           name: 'crudPost',
         },
       });
       expect(check.length).toBe(5);
-      const data = await api.TestPost.updateMany({
+      const data = await api.test_posts.updateMany({
         where: {
           name: 'crudPost',
         },
         data: {
           name: 'crudPost2',
-          userId: userArr[0].id,
+          user_id: userArr[0].id,
         },
       });
       expect(Number(data.numUpdatedRows)).toBe(5);
@@ -227,16 +227,16 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       name: 'check',
       email: 'usercheck@gmail.com',
       wrong: 'false',
-      updatedAt: new Date(),
+      updated_at: new Date(),
     } as unknown as UserTable;
 
     await expect(async () => {
-      await api.TestUser.insertOne(wrongUser);
+      await api.test_users.insertOne(wrongUser);
     }).rejects.toThrowError();
   });
   it('sort and count working', async () => {
     const { userArr } = await testFixture(api, 10);
-    const check = await api.TestUser.selectMany({
+    const check = await api.test_users.selectMany({
       where: {
         name: {
           like: 'user%',
@@ -246,15 +246,15 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       skip: 2,
       take: 4,
       orderBy: {
-        updatedAt: 'desc',
+        updated_at: 'desc',
       },
     });
     expect(check[0].id).toBe(userArr[7].id);
     {
-      const result = await api.TestPost.count({
+      const result = await api.test_posts.count({
         where: {
           name: 'post',
-          userId: userArr[0].id,
+          user_id: userArr[0].id,
         },
       });
       expect(result).toBe(5);
@@ -264,12 +264,12 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('select with relation one', async () => {
     const { userArr } = await testFixture(api, 1);
     {
-      const topPost = await api.TestPost.selectMany({
+      const topPost = await api.test_posts.selectMany({
         take: 1,
       });
       expect(topPost[0]).toBeTruthy();
 
-      const check = await api.TestPost.selectFirst({
+      const check = await api.test_posts.selectFirst({
         where: {
           id: topPost[0].id,
         },
@@ -281,12 +281,12 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(check?.user?.data).toBeTruthy();
     }
     {
-      const check = await api.TestPost.selectMany({
+      const check = await api.test_posts.selectMany({
         where: {
           name: {
             like: 'post%',
           },
-          userId: userArr[0].id,
+          user_id: userArr[0].id,
         },
         include: {
           user: true,
@@ -299,7 +299,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
 
   it('select relation array working', async () => {
     const { userArr } = await testFixture(api, 1);
-    const result = await api.TestUser.selectFirst({
+    const result = await api.test_users.selectFirst({
       where: {
         id: userArr[0].id,
       },
@@ -307,7 +307,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         posts: true,
       },
     });
-    expect(result?.posts?.[0].userId).toBe(userArr[0].id);
+    expect(result?.posts?.[0].user_id).toBe(userArr[0].id);
   });
 
   it('batchone should working', async () => {
@@ -315,7 +315,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     {
       const check = await api.batchOneSmt(
         api.ky
-          .updateTable('TestUser')
+          .updateTable('test_users')
           .set({
             point: sql`point + 1000`,
           })
@@ -326,7 +326,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(check.rows.length).toBe(2);
       expect(check.error).toBeFalsy();
 
-      const check0 = await api.TestUser.selectFirst({
+      const check0 = await api.test_users.selectFirst({
         where: {
           name: 'user0',
         },
@@ -335,7 +335,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     }
     {
       await api.batchOneSmt(
-        sql`update "TestUser" set name = ${api.param(1)} where id = ${api.param(
+        sql`update "test_users" set name = ${api.param(1)} where id = ${api.param(
           2
         )}`,
         [['user2', userArr[0].id]]
@@ -344,7 +344,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     {
       const { error } = await api.batchOneSmt(
         api.ky
-          .updateTable('TestUser')
+          .updateTable('test_users')
           .set({
             data: sql`json_set(dataxx, '$.value', ?)`,
           })
@@ -367,7 +367,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       },
     }));
     await api.batchOneSmt(
-      api.ky.updateTable('TestUser').set(newUsers[0]).where('name', '=', '?'),
+      api.ky.updateTable('test_users').set(newUsers[0]).where('name', '=', '?'),
       newUsers.map(o => {
         return [...Object.values(o), o.name];
       })
@@ -377,13 +377,13 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     const { userArr } = await testFixture(api, 4);
     {
       const result = await api.batchAllSmt([
-        api.ky.selectFrom('TestUser').selectAll(),
-        api.ky.insertInto('TestPost').values({
+        api.ky.selectFrom('test_users').selectAll(),
+        api.ky.insertInto('test_posts').values({
           id: crypto.randomUUID(),
           name: 'post',
           data: '',
-          isPublished: true,
-          userId: userArr[0].id,
+          is_published: true,
+          user_id: userArr[0].id,
         }),
       ]);
 
@@ -401,7 +401,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
           dialect === 'sqlite'
             ? api.$batchOneSmt(
                 api.ky
-                  .updateTable('TestUser')
+                  .updateTable('test_users')
                   .where('name', '=', '?')
                   .set({
                     data: sql` json_set(data, '$.value', ?)`,
@@ -413,7 +413,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
               )
             : api.$batchOneSmt(
                 api.ky
-                  .updateTable('TestUser')
+                  .updateTable('test_users')
                   .where('name', '=', '$1')
                   .set({
                     data: sql`jsonb_set(data, '{value}', $2)`,
@@ -423,7 +423,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
                   ['user1', '"bbb"'],
                 ]
               ),
-        topUser: api.TestUser.$selectMany({
+        topUser: api.test_users.$selectMany({
           take: 10,
           include: {
             posts: true,
@@ -443,7 +443,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(user?.posts?.[0]?.id).toBeTruthy();
       const value = check.getOne('check');
       expect(value).toBe(undefined);
-      const user0 = await api.TestUser.selectFirst({
+      const user0 = await api.test_users.selectFirst({
         where: { name: 'user0' },
       });
       expect(user0?.data?.value).toBe('aaa');
@@ -453,9 +453,9 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('should compare date', async () => {
     await testFixture(api, 10);
     const check = await api.ky
-      .selectFrom('TestUser')
+      .selectFrom('test_users')
       .selectAll()
-      .where('updatedAt', '>=', addDays(new Date(), 3))
+      .where('updated_at', '>=', addDays(new Date(), 3))
       .execute();
     expect(check.length).toBe(6);
   });
@@ -463,7 +463,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('select where will name field is undefined will thow error', async () => {
     const { userArr } = await testFixture(api, 1);
     await expect(async () => {
-      await api.TestUser.selectFirst({
+      await api.test_users.selectFirst({
         where: {
           name: undefined,
           id: userArr[0].id,
@@ -475,7 +475,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
 
   it('updateOne should working', async () => {
     await testFixture(api, 5);
-    const all = await api.TestUser.selectMany({
+    const all = await api.test_users.selectMany({
       where: {
         name: {
           like: 'user%',
@@ -483,7 +483,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       },
     });
     expect(all.length).toBe(5);
-    await api.TestUser.updateOne({
+    await api.test_users.updateOne({
       where: {
         name: {
           like: 'user%',
@@ -493,14 +493,14 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         name: 'check',
       },
     });
-    const check = await api.TestUser.selectMany({
+    const check = await api.test_users.selectMany({
       where: { name: 'check' },
     });
     expect(check.length).toBe(1);
   });
 
   it('insertConflict is working', async () => {
-    const check = await api.TestUser.insertConflict({
+    const check = await api.test_users.insertConflict({
       create: {
         name: 'check',
         email: 'test@gmail.com',
@@ -511,7 +511,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       },
       conflicts: ['email'],
     });
-    await api.TestUser.insertConflict({
+    await api.test_users.insertConflict({
       create: {
         name: 'check',
         email: 'test@gmail.com',
@@ -521,7 +521,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       },
       conflicts: ['email'],
     });
-    const check2 = await api.TestUser.selectMany({
+    const check2 = await api.test_users.selectMany({
       where: {
         email: 'test@gmail.com',
       },
@@ -530,34 +530,34 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     expect(check2[0].id).toBe(check.id);
   });
   it('updateById', async () => {
-    const iuser = await api.TestUser.insertOne({
+    const iuser = await api.test_users.insertOne({
       email: 'test111@gmail.com',
       name: 'dfdas',
     });
-    const user = await api.TestUser.selectById(iuser!.id);
+    const user = await api.test_users.selectById(iuser!.id);
     user!.email = 'checkok@gmail.com';
-    await api.TestUser.updateById(user!.id, user!);
+    await api.test_users.updateById(user!.id, user!);
   });
 
   it('upsert should working', async () => {
-    const iuser = await api.TestUser.insertOne({
+    const iuser = await api.test_users.insertOne({
       email: 'testupsert@gmail.com',
       name: 'dfdas',
     });
     for (let index = 0; index < 5; index++) {
-      await api.TestPost.upsert({
+      await api.test_posts.upsert({
         where: {
           data: '12345',
-          userId: iuser?.id,
+          user_id: iuser?.id,
         },
         data: {
           data: '12345',
-          userId: iuser?.id,
+          user_id: iuser?.id,
           name: 'check_update@gmail.com',
         },
       });
     }
-    const check = await api.TestPost.selectMany({
+    const check = await api.test_posts.selectMany({
       where: {
         data: '12345',
       },
@@ -569,20 +569,20 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
 
   it('insert or update with empty where', async () => {
     const { user } = await testFixture(api);
-    const v = await api.TestPost.upsert({
+    const v = await api.test_posts.upsert({
       data: {
         data: 'upsert ',
-        userId: user?.id,
+        user_id: user?.id,
         name: 'update-upsert@gmail.com',
       },
     });
     expect(v).toBeTruthy();
     if (!v) return;
     v.name = 'insertOrUpdate@gmail.com';
-    await api.TestPost.upsert({
+    await api.test_posts.upsert({
       data: v,
     });
-    const item = await api.TestPost.selectMany({
+    const item = await api.test_posts.selectMany({
       where: {
         name: v.name,
       },
@@ -593,9 +593,9 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   it('innerJoin will not parse', async () => {
     await testFixture(api, 2);
     const data = await api.ky
-      .selectFrom('TestPost')
+      .selectFrom('test_posts')
       .limit(1)
-      .innerJoin('TestUser', 'TestPost.userId', 'TestUser.id')
+      .innerJoin('test_users', 'test_posts.user_id', 'test_users.id')
       .selectAll()
       .select(sql`10`.as('dynamic'))
       .execute();
@@ -604,14 +604,14 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(typeof data[0].data === 'string').toBeTruthy();
     }
     {
-      const check = api.parseMany<UserTable>(data, 'TestUser');
+      const check = api.parseMany<UserTable>(data, 'test_users');
       expect(check[0].data?.o).toBeTruthy();
     }
 
     {
       const check = api.parseMany<UserTable & { dynamic: number }>(
         data,
-        'TestUser',
+        'test_users',
         //  then parse it with extend
         z.object({
           dynamic: z.number(),
@@ -622,9 +622,9 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   });
   it('include with select', async () => {
     await testFixture(api, 1);
-    const data = await api.TestPost.selectFirst({
+    const data = await api.test_posts.selectFirst({
       select: {
-        userId: true,
+        user_id: true,
         name: true,
       },
       include: {
@@ -641,38 +641,38 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
     expect(data?.user?.data).toBeFalsy();
   });
   it('should work with noid', async () => {
-    await api.TestNoId.insertOne({
-      postId: '123456',
-      userId: '123456',
+    await api.test_noids.insertOne({
+      post_id: '123456',
+      user_id: '123456',
     });
-    const test = await api.TestNoId.insertOne({
-      postId: '123456',
-      userId: '1234567',
+    const test = await api.test_noids.insertOne({
+      post_id: '123456',
+      user_id: '1234567',
       sample: 'sample',
     });
     expect((test as any)?.id).toBeFalsy();
-    const check = await api.TestNoId.selectMany({});
+    const check = await api.test_noids.selectMany({});
     expect(check.length).toBe(2);
     expect((check[0] as any)['id']).toBe(undefined);
-    const count = await api.TestNoId.count({ where: { userId: '123456' } });
+    const count = await api.test_noids.count({ where: { user_id: '123456' } });
     expect(count).toBe(1);
   });
 
   it('should insert increment', async () => {
-    await api.TestOrder.insertOne({
+    await api.test_orders.insertOne({
       name: 'test',
       price: 1000,
     });
-    const check = await api.TestOrder.insertOne({
+    const check = await api.test_orders.insertOne({
       name: 'test',
       price: 1000,
     });
     expect(check?.id).toBeGreaterThanOrEqual(2);
   });
   it('insertMany increment', async () => {
-    await api.TestOrder.deleteMany({});
+    await api.test_orders.deleteMany({});
     {
-      const check = await api.TestOrder.insertMany([
+      const check = await api.test_orders.insertMany([
         { name: 'test', price: 1000 },
         { name: 'test', price: 2000 },
       ]);
@@ -681,7 +681,7 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
       expect(check?.[1].id).toBe(check![0].id + 1);
     }
     {
-      const check = await api.TestOrder.insertMany([
+      const check = await api.test_orders.insertMany([
         { name: 'test', price: 1000 },
         { name: 'test', price: 2000 },
       ]);
@@ -695,12 +695,12 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         TestExtend: z.object({
           id: z.number(),
           name: z.string(),
-          createdAt: zDate(),
+          created_at: zDate(),
         }),
       },
       {
         testExtend: o => o.table('TestExtend'),
-        testUser: o => o.table('TestUser'),
+        test_users: o => o.table('test_users'),
       }
     );
     {
@@ -714,18 +714,18 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
         where: { name: 'testextend' },
       });
       expect(check?.id).toBeTruthy();
-      expect(check?.createdAt instanceof Date).toBeTruthy();
+      expect(check?.created_at instanceof Date).toBeTruthy();
     }
     // it can select the order table
-    await extendApi.ky.selectFrom('TestOrder').select('name').execute();
+    await extendApi.ky.selectFrom('test_orders').select('name').execute();
   });
   it('should validate jsonschema', async () => {
-    await api.TestUser.insertOne({
+    await api.test_users.insertOne({
       name: 'dsfdsa',
       email: 'jsonschema@gmail.com',
     });
     await expect(async () => {
-      await api.TestUser.insertOne({
+      await api.test_users.insertOne({
         config: { dsafsa: 'dasd' } as any,
         name: 'dsfdsa',
         email: 'jsonschema@gmail.com',
@@ -734,19 +734,19 @@ export function runTest(api: TestApi | TestPostgresApi, dialect = 'sqlite') {
   });
 
   it('should update by sql syntax with updateOne', async () => {
-    const user = await api.TestUser.insertOne({
+    const user = await api.test_users.insertOne({
       name: 'user01',
       email: 'user011@gmail.com',
       point: 1000,
     });
     const p = 10;
-    await api.TestUser.updateOne({
+    await api.test_users.updateOne({
       where: {
         id: user?.id,
       },
       data: { point: sql`point + ${p}` },
     });
-    const check = await api.TestUser.selectFirst({
+    const check = await api.test_users.selectFirst({
       where: { email: 'user011@gmail.com' },
     });
     expect(check?.point).toBe(1010);

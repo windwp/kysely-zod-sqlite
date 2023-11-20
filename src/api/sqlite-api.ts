@@ -36,7 +36,7 @@ export class SqliteApi<
     const hooks = opts?.hooks ||
       this.config.hooks || [
         hookAutoId(this.config.autoIdFnc),
-        hookTimeStamp({ updatedAt: 'updatedAt', createdAt: 'createdAt' }),
+        hookTimeStamp(this.config.timeStamp),
       ];
     return new PTable<z.output<Schema>[K], z.input<Schema>[K], K>(
       ky as z.output<Schema>[K],
