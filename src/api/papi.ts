@@ -220,7 +220,7 @@ export class PTable<
     this.hookContext = {
       schema: this.schema,
       table: this.table,
-      autoId: (this.schema as any).shape.id?._def.typeName === 'ZodString',
+      autoId: (this.schema as any)?.shape.id?._def.typeName === 'ZodString',
     };
     this.relations = {};
     if (this.schema?.shape) {
