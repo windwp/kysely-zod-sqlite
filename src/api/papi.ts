@@ -191,7 +191,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
 }
 
 /**
- * Some shorcut query
+ * prisma api similar
  */
 export class PTable<
   Table extends { id: string | number },

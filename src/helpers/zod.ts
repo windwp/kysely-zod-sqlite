@@ -21,8 +21,7 @@ export function zJsonSchema<T>(schema: z.Schema<T>, defaultValue?: T) {
     if (v === '' || (!v && schema.isOptional())) return defaultValue as T;
     if (typeof v !== 'string') return schema.parse(v);
     try {
-      const daa = schema.parse(JSON.parse(v));
-      return daa;
+      return schema.parse(JSON.parse(v));
     } catch (e: any) {
       ctx.addIssue({
         code: 'custom',
@@ -88,7 +87,7 @@ export function zRelationMany<T>(
 ) {
   return z
     .custom<Array<T & { __relations?: TableRelation<T> }>>()
-    .transform((v, ctx): Array<T > => {
+    .transform((v, ctx): Array<T> => {
       if ((v as unknown) === '') return (defaultValue as T[]) ?? [];
       if (!v || typeof v !== 'string') return v;
       try {
