@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { TestApi, test_postsgresApi } from './TestApi';
 import { sql } from 'kysely';
-import { UserTable } from './kysely-schema';
+import { PostTable, UserTable } from './kysely-schema';
 import { addDays, startOfDay } from 'date-fns';
 import { z } from 'zod';
 import Database from 'better-sqlite3';
@@ -39,9 +39,10 @@ async function testFixture(api: TestApi | test_postsgresApi, numUser = 1) {
       id: crypto.randomUUID(),
       name: 'post',
       data: '',
+      kind: 'kind1',
       is_published: i % 2 === 0,
       user_id: userArr[i % 2].id,
-    };
+    } as PostTable;
   });
   await api.test_posts.insertMany(postArr);
   api.config.logger?.setLevel('debug');
@@ -193,8 +194,9 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
           id: crypto.randomUUID(),
           name: 'crudPost',
           data: '',
+          kind: 'kind1',
           user_id: userArr[i % 2].id,
-        };
+        } satisfies PostTable;
       });
       await api.test_posts.insertMany(postArr);
       await api.test_posts.deleteMany({
@@ -335,9 +337,9 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
     }
     {
       await api.batchOneSmt(
-        sql`update "test_users" set name = ${api.param(1)} where id = ${api.param(
-          2
-        )}`,
+        sql`update "test_users" set name = ${api.param(
+          1
+        )} where id = ${api.param(2)}`,
         [['user2', userArr[0].id]]
       );
     }
@@ -553,6 +555,7 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
         data: {
           data: '12345',
           user_id: iuser?.id,
+          kind: 'kind1',
           name: 'check_update@gmail.com',
         },
       });
@@ -573,6 +576,7 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
       data: {
         data: 'upsert ',
         user_id: user?.id,
+        kind: 'kind1',
         name: 'update-upsert@gmail.com',
       },
     });

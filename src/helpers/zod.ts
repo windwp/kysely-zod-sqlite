@@ -81,6 +81,10 @@ export function zRelationOne<T>(
     .describe({ ...relation, type: 'one' } as any);
 }
 
+export function zString<T>() {
+  return z.string() as unknown as ZodType<T, any, T>;
+}
+
 export function zRelationMany<T>(
   relation: TableRelation<T>,
   defaultValue?: T[] extends { parse: any } ? never : T[]

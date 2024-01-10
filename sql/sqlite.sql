@@ -16,6 +16,7 @@ CREATE TABLE test_posts (
     name TEXT,
     is_published BOOLEAN DEFAULT FALSE,
     data TEXT,
+    "kind" TEXT,
     user_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

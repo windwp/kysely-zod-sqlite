@@ -20,6 +20,7 @@ CREATE TABLE
     "name" varchar(100),
     "is_published" BOOLEAN DEFAULT FALSE,
     "data" TEXT,
+    "kind" varchar(36),
     "user_id" varchar(36),
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

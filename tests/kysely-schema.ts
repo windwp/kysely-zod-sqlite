@@ -6,6 +6,7 @@ import {
   zJsonSchema,
   zRelationMany,
   zRelationOne,
+  zString,
 } from '../src/helpers/zod';
 
 const dataSchema = z.object({
@@ -41,6 +42,7 @@ export const postSchema = z.object({
   user_id: z.string(),
   is_published: zBoolean(),
   data: z.string(),
+  kind: zString<'kind1' | 'kind2'>(),
   created_at: zDate(),
   updated_at: zDate(),
 });
