@@ -9,9 +9,9 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230419.0",
     "typescript": "^5.0.4",
-    "wrangler": "^3.0.0"
+    "wrangler": "latest"
   },
   "dependencies": {
-    "kysely-zod-sqlite": "^1.4.4"
+    "kysely-zod-sqlite": "latest"
   }
 }
