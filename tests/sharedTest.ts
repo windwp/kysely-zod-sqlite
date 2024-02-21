@@ -381,9 +381,10 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
       const result = await api.batchAllSmt([
         api.ky.selectFrom('test_users').selectAll(),
         api.ky.insertInto('test_posts').values({
-          id: crypto.randomUUID(),
+          id: crypto.randomUUID() as string,
           name: 'post',
           data: '',
+          kind: 'kind1',
           is_published: true,
           user_id: userArr[0].id,
         }),
@@ -546,6 +547,7 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
       email: 'testupsert@gmail.com',
       name: 'dfdas',
     });
+    expect(iuser?.updated_at).toBeTruthy();
     for (let index = 0; index < 5; index++) {
       await api.test_posts.upsert({
         where: {
@@ -568,6 +570,24 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
     expect(check[0].name).toBe('check_update@gmail.com');
     expect(check[0].id).toBeTruthy();
     expect(check.length).toBe(1);
+  });
+
+  it('upsert with out where id', async () => {
+    await api.test_users.deleteMany({});
+    const iuser = await api.test_users.insertOne({
+      email: 'testupsert_updateat@gmail.com',
+      name: 'dfdas',
+    });
+    await new Promise(r => setTimeout(r, 10));
+    expect(iuser?.updated_at).toBeTruthy();
+    const start = iuser?.updated_at?.getTime() || 0;
+    const userId = iuser?.id;
+    const updateUser = await api.test_users.upsert({
+      data: iuser!,
+    });
+    expect(updateUser?.id).toBe(userId);
+    const check = await api.test_users.selectById(userId!);
+    expect(check?.updated_at?.getTime()).toBeGreaterThan(start);
   });
 
   it('insert or update with empty where', async () => {

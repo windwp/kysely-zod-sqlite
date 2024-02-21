@@ -297,8 +297,11 @@ export class PTable<
     opts.select = { id: true };
     selectQuery = mappingQueryOptions(selectQuery, opts);
     query = query.where('id', 'in', selectQuery);
-    delete data.id;
-    return query.set(data);
+    const sourceId = data.id;
+    delete data.id; // avoid update id
+    const cond = query.set(data);
+    data.id = sourceId;
+    return cond;
   }
 
   async insertOne(
@@ -336,6 +339,7 @@ export class PTable<
 
   /**
    * It use for a non unique key if a key is unique use InsertConflict
+   * WARNING upsert will modify the data object
    */
   async upsert(opts: {
     data: Partial<TableInput>;
