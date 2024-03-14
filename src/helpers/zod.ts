@@ -1,4 +1,3 @@
-import { parse, parseISO } from 'date-fns';
 import {
   OK,
   ParseInput,
@@ -108,6 +107,13 @@ export function zRelationMany<T>(
     .describe({ ...relation, type: 'many' } as any);
 }
 
+//not sure why bettersqlite3 format yyyy-MM-dd HH:mm:ss
+function parseDateString(dateString: string) {
+  const [date, time] = dateString.split(' ');
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour = 0, minute = 0, second = 0] = time.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute, second);
+}
 export class ZodKyDate extends ZodDate {
   _parse(input: ParseInput) {
     if (!input.data) {
@@ -115,10 +121,10 @@ export class ZodKyDate extends ZodDate {
       return OK(input.data);
     }
     if (typeof input.data === 'string') {
-      if ((input.data as string).length == 24) {
-        input.data = parseISO(input.data);
+      if (input.data.length == 19) {
+        input.data = parseDateString(input.data);
       } else {
-        input.data = parse(input.data, 'yyyy-MM-dd HH:mm:ss', new Date());
+        input.data = new Date(input.data);
       }
     }
     return super._parse(input);
