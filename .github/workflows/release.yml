@@ -24,8 +24,12 @@ jobs:
         run: pnpm install
       - name: Build
         run: pnpm run build
+      - name: Install Docker
+        run: |
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sh get-docker.sh
       - name: Run docker compose
-        run: docker-compose up -d
+        run: docker compose up -d
       - name: Test
         run: pnpm test
       - name: Release
