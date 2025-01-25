@@ -4,5 +4,10 @@ export default defineConfig({
   plugins: [],
   test: {
     setupFiles: ['./tests/global.setup.js'],
+    poolOptions: {
+      threads: {
+        maxThreads: 1,
+      },
+    },
   },
 });

@@ -49,12 +49,8 @@ describe('test custom zod ', () => {
     const check: ExtractFieldsWithRelations<UserTable> = {
       posts: [],
     };
-    check.posts?.[0];
     const checkPost: ExtractFieldsWithRelations<PostTable> = {
       user: {} as UserTable & { __relations: any },
     };
-    checkPost.user?.id;
-    const user = {} as UserTable;
-    user.posts?.[0];
   });
 });

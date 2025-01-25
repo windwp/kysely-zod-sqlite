@@ -21,7 +21,7 @@ export type ApiConfig = {
   /* auto generate uuid if id is ZodString */
   autoIdFnc?: () => string;
   /* analyze performance of query and meta result */
-  analyzeFnc?: (query: { sql: string; meta: string; time: number }) => void;
+  analyzeFnc?: (query: { sql: string; meta: any; time: number }) => void;
 };
 export type DbDriverConfig = ApiConfig;
 export type FetchDriverConfig = ApiConfig & {

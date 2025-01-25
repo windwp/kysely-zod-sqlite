@@ -20,7 +20,7 @@ export class BetterSqlite3Driver implements Driver {
     // Nothing to do here.
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+   
   async acquireConnection(): Promise<DatabaseConnection> {
     return new BetterConnection(this.#db, this.#config);
   }
@@ -122,7 +122,7 @@ export function handler(db: Database, body: DataBody) {
     }
     default:
       // @ts-ignore
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+       
       throw new Error(`Unknown command :${body.action}`);
   }
   return result;

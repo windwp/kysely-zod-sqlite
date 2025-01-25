@@ -34,3 +34,4 @@ describe('postgresql', async () => {
   await connection.query(sql);
   runTest(api, 'postgres');
 });
+

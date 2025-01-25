@@ -69,7 +69,7 @@ class FetchConnection implements DatabaseConnection {
     throw new Error(errorMessage);
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await, require-yield
+  // eslint-disable-next-line require-yield
   async *streamQuery<R>(): AsyncIterableIterator<QueryResult<R>> {
     throw new Error('FetchConnection does not support streaming');
   }
@@ -85,7 +85,7 @@ export class FetchDriver implements Driver {
     // Nothing to do here.
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+   
   async acquireConnection(): Promise<DatabaseConnection> {
     return new FetchConnection(this.#config);
   }

@@ -59,7 +59,7 @@ export function mappingRelations<V>(
     for (const key in opts.include) {
       const relation = relations[key];
       const select = opts.include[key];
-      if (!relation) throw new Error(`relation [${key}] not found`);
+      if (!relation) throw new Error(`relation [${key.toString()}] not found`);
       const columns =
         typeof select === 'boolean'
           ? Object.keys(relation.schema?.shape)

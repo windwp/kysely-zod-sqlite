@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, assert } from 'vitest';
 import { TestApi, test_postsgresApi } from './TestApi';
 import { sql } from 'kysely';
 import { PostTable, UserTable } from './kysely-schema';
@@ -111,7 +111,8 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
         email: 'withdata@gmail.com',
         data: '' as any,
       });
-      const value = await api.test_users.selectById(check?.id!);
+      assert(check, 'insertOne should return value');
+      const value = await api.test_users.selectById(check.id);
       expect(typeof value?.data).toBe('object');
     }
 
@@ -126,7 +127,8 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
         },
       });
 
-      const value = await api.test_users.selectById(check?.id!);
+      assert(check, 'insertOne should return value');
+      const value = await api.test_users.selectById(check.id!);
       api.test_users.ky.selectFrom('test_users').select(['id', 'config']);
       api.test_users.ky.insertInto('test_users').values({
         id: '1234',

@@ -20,7 +20,6 @@ export class D1Driver implements Driver {
     // Nothing to do here.
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   async acquireConnection(): Promise<DatabaseConnection> {
     return new D1Connection(this.#d1, this.#config);
   }
@@ -63,7 +62,7 @@ export async function handler(
         .first();
       return {
         success: true,
-        meta: { changes: 0 },
+        meta: { changes: 0 } as unknown as D1Result['meta'],
         results: [first],
       };
     }
@@ -96,10 +95,9 @@ export async function handler(
       };
     }
     case 'bulks': {
-      const result: D1Result = {
+      const result: Partial<D1Result> = {
         results: [],
         success: true,
-        meta: {},
       };
       for (const op of body.operations) {
         const data = await handler(d1, op);
@@ -109,12 +107,12 @@ export async function handler(
           meta: data.meta,
         });
       }
-      return result;
+      return result as D1Result;
     }
 
     default:
       // @ts-ignore
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
       throw new Error(`Unknown command :${body.action}`);
   }
 }
@@ -137,6 +135,7 @@ class D1Connection implements DatabaseConnection {
       action =
         compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
@@ -161,9 +160,9 @@ class D1Connection implements DatabaseConnection {
       const numAffectedRows =
         results.meta?.changes > 0 ? results.meta?.changes : undefined;
       return {
-        insertId: results.meta.last_row_id ?? undefined,
+        insertId: BigInt(results.meta.last_row_id) ?? undefined,
         rows: results.results || [],
-        numAffectedRows,
+        numAffectedRows: BigInt(numAffectedRows ?? 0),
       };
     } catch (error: any) {
       this.#config.logger?.error(`[SQL_ERROR=========================

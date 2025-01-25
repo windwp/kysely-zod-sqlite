@@ -109,7 +109,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
   abstract batchOneSmt<
     V extends
       | SelectQueryBuilder<z.output<Schema>, any, any>
-      | InsertQueryBuilder<z.output<Schema>, any, any>
+      | InsertQueryBuilder<z.output<Schema>, any, any>,
   >(
     sqlQuery:
       | { compile: () => CompiledQuery<z.output<Schema>> }
@@ -152,7 +152,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
         | undefined;
     },
     opts?: ApiOptions & { isTransaction: boolean }
-  ): Promise<{}>;
+  ): Promise<any>;
   /**
    * extend the origin zod schema
    * it similar to withTables on kysely
@@ -181,7 +181,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
       any,
       z.input<Schema> & { [k in keyof T]: z.input<T[k]> },
       z.output<Schema> & { [k in keyof T]: z.output<T[k]> }
-    >
+    >,
   >(
     schema: T,
     extendApi?: ExtendApi
@@ -196,7 +196,7 @@ export abstract class PApi<Schema extends ZodObject<any, any, any>> {
 export class PTable<
   Table extends { id: string | number },
   TableInput extends { id: string | number },
-  TableName extends string
+  TableName extends string,
 > {
   private relations: { [k: string]: TableRelation };
   private hooks: PHooks[];
@@ -441,7 +441,7 @@ export class PTable<
 
   async deleteMany(opts: {
     where?: QueryWhere<Table>;
-  }): Promise<{ numDeletedRows: BigInt }> {
+  }): Promise<{ numDeletedRows: bigint }> {
     return await this.$deleteMany(opts).executeTakeFirst();
   }
 
@@ -508,7 +508,7 @@ export class PTable<
       .set(value as any);
   }
 
-  deleteById(id: Table['id']): Promise<{ numDeletedRows: BigInt }> {
+  deleteById(id: Table['id']): Promise<{ numDeletedRows: bigint }> {
     return this.$deleteById(id).executeTakeFirst();
   }
 
@@ -517,12 +517,9 @@ export class PTable<
   }
 }
 
-export type InferSchemaFromPApi<T> = T extends PApi<infer K>
-  ? K extends Record<string, any>
-    ? K
-    : never
-  : never;
+export type InferSchemaFromPApi<T> =
+  T extends PApi<infer K> ? (K extends Record<string, any> ? K : never) : never;
 export type PTableFromSchema<
   Schema extends ZodObject<any, any, any>,
-  K extends keyof z.output<Schema> & string
+  K extends keyof z.output<Schema> & string,
 > = PTable<z.output<Schema>[K], z.input<Schema>[K], K>;
