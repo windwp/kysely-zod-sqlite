@@ -298,9 +298,8 @@ const check = await api.bulk({
 ```
 # FAQ
 
-### Is that library is a ORM?
-No, It just a wrapper around kysely.
-You can think it is an API with zod for validation and parse schema with kysely for query
+### Is this library an ORM?
+No, it is merely a wrapper around Kysely. You can think of it as an API that uses Zod for validation and schema parsing, combined with Kysely for querying.
 
 ### Different between using this library vs kysely
 ``` typescript
@@ -315,10 +314,10 @@ api.table('aaa').$selectMany()
 // it is kysely query you can modify that query or use it on batch
 ```
 
-### column is null
-when your database column can null. you need to use nullable not optional on your model
+### Column is null
+When your database column can be null, you need to use `nullable` instead of `optional` in your model.
 ```typescript
-access_token: z.string().optional().nullable(),
+access_token: z.string().nullable(),
 ```
 
 ### Parse custom schema on query with join
