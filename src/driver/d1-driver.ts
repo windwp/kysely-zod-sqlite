@@ -117,6 +117,20 @@ export async function handler(
   }
 }
 
+function getDriverAction(compiledQuery: any) {
+  let action = (compiledQuery as any).action;
+
+  if (!action) {
+    action =
+      compiledQuery.query.kind === 'SelectQueryNode' ||
+      (compiledQuery.query.returning &&
+        compiledQuery.query.returning.kind == 'ReturningNode')
+        ? 'selectAll'
+        : 'run';
+  }
+  return action;
+}
+
 class D1Connection implements DatabaseConnection {
   #config: DbDriverConfig;
   #d1: D1Database;
@@ -129,12 +143,8 @@ class D1Connection implements DatabaseConnection {
   async executeQuery<T>(
     compiledQuery: CompiledQuery
   ): Promise<QueryResult<T> & { error?: any }> {
-    let action = (compiledQuery as any).action;
+    let action = getDriverAction(compiledQuery);
 
-    if (!action) {
-      action =
-        compiledQuery.query.kind === 'SelectQueryNode' ? 'selectAll' : 'run';
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {

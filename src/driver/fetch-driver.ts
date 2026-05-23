@@ -6,6 +6,22 @@ import type {
 } from 'kysely';
 import { FetchDriverConfig } from '../types';
 
+function getDriverAction(compiledQuery: any) {
+  let action = (compiledQuery as any).action;
+
+  if (!action) {
+    action =
+      (compiledQuery.query as any)?.limit?.limit.value == 1
+        ? 'selectFirst'
+        : compiledQuery.query.kind === 'SelectQueryNode' ||
+            (compiledQuery.query.returning &&
+              compiledQuery.query.returning.kind == 'ReturningNode')
+          ? 'selectAll'
+          : 'run';
+  }
+  return action;
+}
+
 class FetchConnection implements DatabaseConnection {
   #config: FetchDriverConfig;
 
@@ -16,15 +32,7 @@ class FetchConnection implements DatabaseConnection {
   async executeQuery<O>(
     compiledQuery: CompiledQuery
   ): Promise<QueryResult<O> & { error?: any }> {
-    let action = (compiledQuery as any).action;
-    if (!action) {
-      action =
-        (compiledQuery.query as any)?.limit?.limit.value == 1
-          ? 'selectFirst'
-          : compiledQuery.query.kind === 'SelectQueryNode'
-          ? 'selectAll'
-          : 'run';
-    }
+    let action = getDriverAction(compiledQuery);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
@@ -85,7 +93,6 @@ export class FetchDriver implements Driver {
     // Nothing to do here.
   }
 
-   
   async acquireConnection(): Promise<DatabaseConnection> {
     return new FetchConnection(this.#config);
   }

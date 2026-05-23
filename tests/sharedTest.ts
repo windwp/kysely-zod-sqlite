@@ -777,4 +777,18 @@ export function runTest(api: TestApi | test_postsgresApi, dialect = 'sqlite') {
     });
     expect(check?.point).toBe(1010);
   });
+
+  it('should support returning', async () => {
+    const user = await api.test_users.ky
+      .insertInto('test_users')
+      .values({
+        id: crypto.randomUUID(),
+        name: 'user-returning',
+        email: '',
+        data: {} as any,
+      })
+      .returning('id')
+      .executeTakeFirst();
+    expect(user?.id).toBeTruthy();
+  });
 }

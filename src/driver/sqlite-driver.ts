@@ -20,7 +20,6 @@ export class BetterSqlite3Driver implements Driver {
     // Nothing to do here.
   }
 
-   
   async acquireConnection(): Promise<DatabaseConnection> {
     return new BetterConnection(this.#db, this.#config);
   }
@@ -122,10 +121,26 @@ export function handler(db: Database, body: DataBody) {
     }
     default:
       // @ts-ignore
-       
+
       throw new Error(`Unknown command :${body.action}`);
   }
   return result;
+}
+
+function getDriverAction(compiledQuery: any) {
+  let action = (compiledQuery as any).action;
+
+  if (!action) {
+    action =
+      (compiledQuery.query as any)?.limit?.limit.value == 1
+        ? 'selectFirst'
+        : compiledQuery.query.kind === 'SelectQueryNode' ||
+            (compiledQuery.query.returning &&
+              compiledQuery.query.returning.kind == 'ReturningNode')
+          ? 'selectAll'
+          : 'run';
+  }
+  return action;
 }
 class BetterConnection implements DatabaseConnection {
   #config: BettterDriverConfig;
@@ -139,17 +154,7 @@ class BetterConnection implements DatabaseConnection {
   async executeQuery<O>(
     compiledQuery: CompiledQuery
   ): Promise<QueryResult<O> & { error?: any }> {
-    let action = (compiledQuery as any).action;
-
-    if (!action) {
-      action =
-        (compiledQuery.query as any)?.limit?.limit.value == 1
-          ? 'selectFirst'
-          : compiledQuery.query.kind === 'SelectQueryNode'
-          ? 'selectAll'
-          : 'run';
-    }
-
+    let action = getDriverAction(compiledQuery);
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
