@@ -23,7 +23,7 @@ import { hookAutoId } from '../hooks/auto-id';
 import { hookTimeStamp } from '../hooks/timestamp';
 
 export class SqliteApi<
-  Schema extends ZodObject<any, any, any>
+  Schema extends ZodObject<any, any, any>,
 > extends PApi<Schema> {
   table<K extends keyof z.output<Schema> & string>(
     tableName: K,
@@ -56,7 +56,7 @@ export class SqliteApi<
   async batchOneSmt<
     V extends
       | SelectQueryBuilder<z.output<Schema>, any, any>
-      | InsertQueryBuilder<z.output<Schema>, any, any>
+      | InsertQueryBuilder<z.output<Schema>, any, any>,
   >(
     sqlQuery:
       | { compile: () => CompiledQuery<z.output<Schema>> }
@@ -103,7 +103,7 @@ export class SqliteApi<
       action: 'batchAllSmt',
       batch: sqlQuerys.map(o => {
         const v = o.compile();
-        const table = (v.query as any).from?.froms[0]?.table.identifier?.name;
+        const table = (v.query as any).from?.froms[0]?.table?.identifier?.name;
         return {
           sql: v.sql,
           parameters: v.parameters,
@@ -153,7 +153,7 @@ export class SqliteApi<
         const query: CompiledQuery<z.output<Schema>> = (value as any).compile(
           this.ky
         );
-        const table = (query.query as any).from?.froms[0]?.table.identifier
+        const table = (query.query as any).from?.froms[0]?.table?.identifier
           ?.name;
         return {
           key: k,
@@ -239,7 +239,7 @@ export class SqliteApi<
       any,
       z.input<Schema> & { [k in keyof T]: z.input<T[k]> },
       z.output<Schema> & { [k in keyof T]: z.output<T[k]> }
-    >
+    >,
   >(schema: T, extendApi?: ExtendApi) {
     const newSchema = this.schema.extend(schema) as ExtendSchema;
     const api = new SqliteApi({

@@ -89,7 +89,7 @@ export class PostgresApi<
         });
       }
     });
-    const table = (query.query as any).from?.froms[0]?.table.identifier?.name;
+    const table = (query.query as any).from?.froms[0]?.table?.identifier?.name;
     return {
       action: 'batchAllSmt' as const,
       batch: batchParams.map(o => {
@@ -111,7 +111,7 @@ export class PostgresApi<
       action: 'batchAllSmt',
       batch: sqlQuerys.map(o => {
         const v = o.compile();
-        const table = (v.query as any).from?.froms[0]?.table.identifier?.name;
+        const table = (v.query as any).from?.froms[0]?.table?.identifier?.name;
         return {
           sql: v.sql,
           parameters: v.parameters,
@@ -169,7 +169,7 @@ export class PostgresApi<
         const query: CompiledQuery<z.output<Schema>> = (value as any).compile(
           this.ky
         );
-        const table = (query.query as any).from?.froms[0]?.table.identifier
+        const table = (query.query as any).from?.froms[0]?.table?.identifier
           ?.name;
         return {
           key: k,
