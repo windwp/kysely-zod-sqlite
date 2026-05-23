@@ -21,7 +21,7 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
       - name: Install pnpm
-        run: npm approve-builds esbuild better-sqlite3
+        run: pnpm approve-builds esbuild better-sqlite3
       - name: Install dependencies
         run: pnpm install 
       - name: Build
