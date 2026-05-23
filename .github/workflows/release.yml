@@ -20,10 +20,10 @@ jobs:
           node-version: lts/*
       - name: Install pnpm
         run: npm install -g pnpm
-      - name: Install pnpm
-        run: pnpm approve-builds esbuild better-sqlite3
+      - name: Configure pnpm to allow build scripts
+        run: pnpm config set enable-pre-post-scripts true
       - name: Install dependencies
-        run: pnpm install 
+        run: pnpm install --ignore-scripts=false || pnpm approve-builds esbuild better-sqlite3 && pnpm install 
       - name: Build
         run: pnpm run build
       - name: Install Docker
