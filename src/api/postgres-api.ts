@@ -54,7 +54,7 @@ export class PostgresApi<
       | { compile: () => CompiledQuery<z.output<Schema>> }
       | RawBuilder<z.output<Schema>>,
     batchParams: Array<any[]>,
-    opts?: ApiOptions
+    _?: ApiOptions
   ): Promise<{ rows: ExtractResultFromQuery<V>[]; error: any }> {
     const body = this.$batchOneSmt(sqlQuery, batchParams);
     if (body.action === 'batchAllSmt') {

@@ -143,7 +143,7 @@ class D1Connection implements DatabaseConnection {
   async executeQuery<T>(
     compiledQuery: CompiledQuery
   ): Promise<QueryResult<T> & { error?: any }> {
-    let action = getDriverAction(compiledQuery);
+    const action = getDriverAction(compiledQuery);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;

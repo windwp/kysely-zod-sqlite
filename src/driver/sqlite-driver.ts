@@ -154,7 +154,9 @@ class BetterConnection implements DatabaseConnection {
   async executeQuery<O>(
     compiledQuery: CompiledQuery
   ): Promise<QueryResult<O> & { error?: any }> {
-    let action = getDriverAction(compiledQuery);
+    const action = getDriverAction(compiledQuery);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { query, ...rest } = compiledQuery;
     const body = {
       action,
