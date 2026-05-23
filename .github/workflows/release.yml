@@ -20,8 +20,10 @@ jobs:
           node-version: lts/*
       - name: Install pnpm
         run: npm install -g pnpm
+      - name: Install pnpm
+        run: npm approve-builds esbuild better-sqlite3
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install 
       - name: Build
         run: pnpm run build
       - name: Install Docker
